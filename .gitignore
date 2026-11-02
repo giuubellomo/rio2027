@@ -1,0 +1,4 @@
+.DS_Store
+dev/datos.json
+# Documentación privada del viaje (nombres, diseño): no va al repo público.
+documentacion/
