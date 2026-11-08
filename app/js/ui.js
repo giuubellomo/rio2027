@@ -1,5 +1,5 @@
 // Componentes y hooks compartidos por todas las pantallas.
-import { html, useState, useEffect } from './vendor/preact-htm.js';
+import { html, useState, useEffect, useRef } from './vendor/preact-htm.js';
 import { liveQuery } from './vendor/dexie.mjs';
 import { db } from './db.js';
 import { sesion } from './sesion.js';
@@ -93,6 +93,50 @@ export function PildoraSync() {
     aria-label=${texto + '. Tocá para sincronizar.'}>
     <span class="punto" aria-hidden="true"></span>${texto}
   </button>`;
+}
+
+/** Panel que sube desde abajo, para crear y editar. Se cierra con la X, con Escape o tocando afuera. */
+export function Hoja({ titulo, alCerrar, children }) {
+  const panel = useRef(null);
+  useEffect(() => {
+    const anterior = document.activeElement;
+    panel.current?.focus();
+    const tecla = (e) => e.key === 'Escape' && alCerrar();
+    addEventListener('keydown', tecla);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      removeEventListener('keydown', tecla);
+      document.body.style.overflow = '';
+      anterior?.focus?.();
+    };
+  }, []);
+  return html`<div class="velo" onClick=${(e) => e.target === e.currentTarget && alCerrar()}>
+    <div class="hoja-panel" role="dialog" aria-modal="true" aria-labelledby="hoja-titulo" tabindex="-1" ref=${panel}>
+      <div class="hoja-cabeza">
+        <h2 id="hoja-titulo">${titulo}</h2>
+        <button type="button" class="cerrar" aria-label="Cerrar" onClick=${alCerrar}>
+          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
+      </div>
+      ${children}
+    </div>
+  </div>`;
+}
+
+export function BotonAgregar({ etiqueta, onClick }) {
+  return html`<button type="button" class="boton-agregar" aria-label=${etiqueta} onClick=${onClick}>
+    <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+  </button>`;
+}
+
+/** Botón de borrar que pide confirmación en el mismo lugar (sin ventanas del navegador). */
+export function BotonBorrar({ onBorrar, que = 'esto' }) {
+  const [confirmando, setConfirmando] = useState(false);
+  if (!confirmando) return html`<button type="button" class="boton-borde peligro" onClick=${() => setConfirmando(true)}>Borrar</button>`;
+  return html`<div class="acciones">
+    <button type="button" class="boton-borde peligro" onClick=${onBorrar}>Sí, borrar ${que}</button>
+    <button type="button" class="boton-borde" onClick=${() => setConfirmando(false)}>Cancelar</button>
+  </div>`;
 }
 
 const ICONOS = {

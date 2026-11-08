@@ -213,3 +213,106 @@ h1, h2, h3 { margin: 0; font-family: var(--titulos); font-weight: 800; }
 }
 .codigo-viaje span { font-family: var(--mono); font-size: 20px; font-weight: 800; letter-spacing: 0.14em; }
 .acciones { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* ───────── Itinerario y Reservas ───────── */
+.titulo-pantalla.con-boton { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding-bottom: 12px; }
+.boton-agregar {
+  width: 52px; height: 52px; flex-shrink: 0; border: 0; border-radius: 50%;
+  background: var(--coral); color: var(--tinta);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+
+.segmentos { display: flex; gap: 4px; margin: 0 16px 4px; padding: 5px; border-radius: var(--pildora); background: var(--tinta); }
+.segmentos button {
+  flex: 1; min-height: 46px; border: 0; border-radius: var(--pildora);
+  background: transparent; color: var(--blanco); font-size: 15px; font-weight: 800;
+}
+.segmentos button[aria-pressed="true"], .segmentos button[aria-checked="true"] { background: var(--amarillo); color: var(--tinta); }
+.segmentos.claro { margin: 0; }
+
+.tira-dias {
+  display: flex; gap: 6px; margin: 0 16px; padding: 6px;
+  border-radius: 28px; background: var(--tinta);
+  overflow-x: auto; scrollbar-width: none;
+}
+.tira-dias::-webkit-scrollbar { display: none; }
+.tira-dias button {
+  position: relative; flex: 1 0 54px; height: 64px; border: 0; border-radius: 22px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  background: transparent; color: var(--blanco);
+}
+.tira-dias button[aria-pressed="true"] { background: var(--amarillo); color: var(--tinta); }
+.tira-dias .semana { font-size: 12px; font-weight: 700; }
+.tira-dias .num { font-family: var(--titulos); font-size: 22px; font-weight: 800; line-height: 1; }
+.tira-dias .hoy { position: absolute; bottom: 6px; width: 5px; height: 5px; border-radius: 50%; background: var(--coral); }
+.titulo-dia { padding: 14px 20px 0; font-size: 16px; font-weight: 800; }
+
+.chips { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.chip { padding: 5px 12px; border-radius: var(--pildora); font-size: 12px; font-weight: 800; }
+.chip.oscuro { background: var(--tinta); color: var(--blanco); }
+.chip.hora { font-size: 14px; padding: 6px 12px; font-variant-numeric: tabular-nums; }
+.chip.suave { background: rgba(255, 253, 248, 0.7); font-weight: 700; }
+.chip.proxima { background: var(--amarillo); border: 2px solid var(--tinta); transform: rotate(-4deg); }
+
+.titulo-tarjeta { font-size: 23px; line-height: 1.08; overflow-wrap: anywhere; }
+.sub-tarjeta { margin-top: 6px; font-size: 14px; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
+.sub-tarjeta.detalle { white-space: pre-line; }
+
+.tarjeta.evento { gap: 14px; padding: 16px 16px 16px 18px; border-radius: 28px; }
+.tarjeta.evento.borde { border: 2px solid var(--tinta); }
+.fila-evento { display: flex; align-items: flex-end; gap: 12px; }
+.tocar-editar { position: absolute; inset: 0; border: 0; background: transparent; border-radius: inherit; }
+.flecha-link { position: relative; z-index: 1; border-radius: 50%; }
+.flecha-link .flecha { width: 48px; height: 48px; }
+
+.tarjeta.reserva { gap: 14px; padding: 18px; border-radius: var(--radio-grande); }
+.tarjeta.reserva.incompleta { background: var(--fondo); border: 2.5px dashed var(--tinta); }
+.caja-codigo {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 8px 8px 8px 18px; border-radius: var(--pildora); background: var(--fondo);
+}
+.caja-codigo div { min-width: 0; }
+.caja-codigo .rotulo { font-size: 11px; font-weight: 700; color: var(--suave); text-transform: uppercase; letter-spacing: 0.08em; }
+.caja-codigo .valor { font-family: var(--mono); font-size: 22px; font-weight: 800; letter-spacing: 0.14em; overflow-wrap: anywhere; }
+.caja-codigo .boton { min-height: 46px; flex-shrink: 0; }
+.boton.copiado { background: var(--amarillo); color: var(--tinta); }
+.boton-borde.grande { min-height: 48px; font-size: 15px; font-weight: 800; gap: 8px; }
+.boton-borde.grande .flecha { width: 28px; height: 28px; background: transparent; color: var(--tinta); }
+
+.vacio { align-items: center; text-align: center; font-size: 15px; font-weight: 600; }
+.titulo-vacio { font-family: var(--titulos); font-size: 24px; font-weight: 800; }
+
+/* ───────── Hoja (crear y editar) ───────── */
+.velo {
+  position: fixed; inset: 0; z-index: 20;
+  background: rgba(22, 22, 26, 0.45);
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.hoja-panel {
+  width: 100%; max-width: 480px; max-height: calc(100dvh - 24px); overflow-y: auto; overscroll-behavior: contain;
+  padding: 20px 20px calc(24px + env(safe-area-inset-bottom));
+  border-radius: 30px 30px 0 0; background: var(--fondo);
+}
+.hoja-panel:focus { outline: none; }
+.hoja-cabeza { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.hoja-cabeza h2 { font-size: 26px; }
+.cerrar {
+  width: 44px; height: 44px; flex-shrink: 0; border: 2px solid var(--tinta); border-radius: 50%;
+  background: transparent; display: inline-flex; align-items: center; justify-content: center;
+}
+.formulario { display: flex; flex-direction: column; gap: 16px; }
+.rotulo-campo { font-size: 14px; font-weight: 700; }
+.opcional { font-weight: 600; color: var(--suave); }
+.entrada.mono { font-family: var(--mono); letter-spacing: 0.1em; text-transform: uppercase; }
+.entrada.area { height: auto; padding: 14px 18px; border-radius: 24px; resize: vertical; line-height: 1.4; }
+select.entrada { appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--tinta) 50%), linear-gradient(135deg, var(--tinta) 50%, transparent 50%); background-position: calc(100% - 22px) 50%, calc(100% - 16px) 50%; background-size: 6px 6px; background-repeat: no-repeat; }
+.opciones { display: flex; flex-wrap: wrap; gap: 8px; }
+.opciones button {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 44px; padding: 0 16px; border: 2px solid var(--tinta); border-radius: var(--pildora);
+  background: var(--blanco); font-size: 15px; font-weight: 700;
+}
+.opciones button[aria-checked="true"] { background: var(--color, var(--amarillo)); box-shadow: inset 0 0 0 2px var(--tinta); }
+.opciones .persona-chip { padding-left: 6px; }
+.opciones .persona-chip[aria-pressed="true"] { background: var(--tinta); color: var(--blanco); }
+.entrada[type="date"], .entrada[type="time"] { padding: 0 14px; }

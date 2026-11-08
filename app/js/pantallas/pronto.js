@@ -3,8 +3,6 @@ import { html } from '../vendor/preact-htm.js';
 import { Estrella } from '../ui.js';
 
 const FASES = {
-  itinerario: { titulo: 'Itinerario', fase: 2, cuando: 'antes de fin de diciembre', color: 'var(--menta)' },
-  reservas: { titulo: 'Reservas', fase: 2, cuando: 'antes de fin de diciembre', color: 'var(--celeste)' },
   ideas: { titulo: 'Ideas', fase: 3, cuando: 'en la primera semana de enero', color: 'var(--coral)' },
   gastos: { titulo: 'Gastos', fase: 4, cuando: 'en la segunda semana de enero', color: 'var(--amarillo)' },
 };

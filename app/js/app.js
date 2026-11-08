@@ -5,6 +5,8 @@ import { Nav, useSesion } from './ui.js';
 import { Entrada } from './pantallas/entrada.js';
 import { Inicio } from './pantallas/inicio.js';
 import { Ajustes } from './pantallas/ajustes.js';
+import { Itinerario } from './pantallas/itinerario.js';
+import { Reservas } from './pantallas/reservas.js';
 import { Pronto } from './pantallas/pronto.js';
 
 const RUTAS = ['inicio', 'itinerario', 'reservas', 'ideas', 'gastos', 'ajustes'];
@@ -42,6 +44,8 @@ function App() {
   let pantalla;
   if (ruta === 'inicio') pantalla = html`<${Inicio} />`;
   else if (ruta === 'ajustes') pantalla = html`<${Ajustes} />`;
+  else if (ruta === 'itinerario') pantalla = html`<${Itinerario} />`;
+  else if (ruta === 'reservas') pantalla = html`<${Reservas} />`;
   else pantalla = html`<${Pronto} ruta=${ruta} />`;
 
   return html`<div class="app">${pantalla}<${Nav} ruta=${ruta} /></div>`;

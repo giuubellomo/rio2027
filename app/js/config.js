@@ -5,4 +5,4 @@ const enLocal = ['localhost', '127.0.0.1'].includes(location.hostname);
 
 // En la compu se usa el servidor de prueba (dev/servidor.js).
 export const API_URL = enLocal ? '/api' : URL_APPS_SCRIPT;
-export const VERSION = '0.1.0';
+export const VERSION = '0.2.0';
