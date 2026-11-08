@@ -25,7 +25,7 @@ export function quienesVan(evento, personas) {
   return van.map((p) => p.nombre).join(', ');
 }
 
-export function Itinerario() {
+export function Itinerario({ sub }) {
   const viaje = useViaje();
   const eventos = useEventos();
   const personas = usePersonas();
@@ -33,7 +33,8 @@ export function Itinerario() {
   const hoy = hoyISO();
   const [elegido, setElegido] = useState(null);
   const [editando, setEditando] = useState(null);
-  const dia = dias.includes(elegido) ? elegido : dias.includes(hoy) ? hoy : dias[0];
+  // Se puede abrir en un día puntual: #/itinerario/2027-01-19
+  const dia = [elegido, sub, hoy].find((d) => dias.includes(d)) || dias[0];
   const delDia = eventos.filter((e) => e.fecha === dia);
   // Actividades que quedaron fuera de las fechas del viaje (si se cambiaron en Ajustes).
   const fuera = dias.length ? eventos.filter((e) => !dias.includes(e.fecha)) : [];

@@ -1,9 +1,10 @@
-// Inicio: cuenta regresiva (RF-07), reservas incompletas (RF-09) y modo "durante el viaje" (RF-10).
+// Inicio: cuenta regresiva (RF-07), ideas sin votar y reservas incompletas (RF-09) y modo "durante el viaje" (RF-10).
 import { html } from '../vendor/preact-htm.js';
-import { Avatar, Estrella, Flecha, PildoraSync, usePersonas, useViaje, useYo } from '../ui.js';
+import { Avatar, Estrella, Flecha, PildoraSync, usePersonas, useSesion, useViaje, useYo } from '../ui.js';
 import { ahora, fechaLarga, momentoDelViaje } from '../util.js';
 import { CATEGORIAS, quienesVan, useEventos } from './itinerario.js';
 import { faltanDatos as faltanEnReserva, useReservas } from './reservas.js';
+import { sinMiVoto, useIdeas } from './ideas.js';
 
 export function Inicio() {
   const yo = useYo();
@@ -12,6 +13,8 @@ export function Inicio() {
   const momento = momentoDelViaje(viaje);
   const reservas = useReservas();
   const incompletas = reservas.filter((r) => faltanEnReserva(r).length).length;
+  const { personaId } = useSesion();
+  const porVotar = sinMiVoto(useIdeas(), personaId).length;
   const faltanDatos = viaje && (!viaje.fechaFin || !viaje.cambioUSD || !viaje.cambioUYU);
 
   return html`
@@ -49,6 +52,15 @@ export function Inicio() {
           <div class="texto">
             <p class="titulo">Faltan datos del viaje</p>
             <p class="sub">${[!viaje.fechaFin && 'fecha de vuelta', (!viaje.cambioUSD || !viaje.cambioUYU) && 'tipo de cambio'].filter(Boolean).join(' y ')}</p>
+          </div>
+          <${Flecha} />
+        </a>`}
+
+      ${porVotar > 0 && html`
+        <a class="tarjeta fila-link" href="#/ideas" style="background:var(--coral)">
+          <div class="texto">
+            <p class="titulo">${porVotar === 1 ? '1 idea espera tu voto' : `${porVotar} ideas esperan tu voto`}</p>
+            <p class="sub">Votá así sabemos qué agendar</p>
           </div>
           <${Flecha} />
         </a>`}

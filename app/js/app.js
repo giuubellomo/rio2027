@@ -7,13 +7,15 @@ import { Inicio } from './pantallas/inicio.js';
 import { Ajustes } from './pantallas/ajustes.js';
 import { Itinerario } from './pantallas/itinerario.js';
 import { Reservas } from './pantallas/reservas.js';
+import { Ideas } from './pantallas/ideas.js';
 import { Pronto } from './pantallas/pronto.js';
 
 const RUTAS = ['inicio', 'itinerario', 'reservas', 'ideas', 'gastos', 'ajustes'];
 
+/** '#/ideas/abc' → { ruta: 'ideas', sub: 'abc' } */
 function rutaActual() {
-  const r = location.hash.replace(/^#\/?/, '').split('/')[0];
-  return RUTAS.includes(r) ? r : 'inicio';
+  const [r, sub = ''] = location.hash.replace(/^#\/?/, '').split('/');
+  return RUTAS.includes(r) ? { ruta: r, sub: decodeURIComponent(sub) } : { ruta: 'inicio', sub: '' };
 }
 
 function useRuta() {
@@ -31,7 +33,7 @@ function useRuta() {
 
 function App() {
   const { codigo, personaId } = useSesion();
-  const ruta = useRuta();
+  const { ruta, sub } = useRuta();
 
   if (!API_URL) {
     return html`<div class="app"><main class="contenido" style="padding-top:40px">
@@ -44,8 +46,9 @@ function App() {
   let pantalla;
   if (ruta === 'inicio') pantalla = html`<${Inicio} />`;
   else if (ruta === 'ajustes') pantalla = html`<${Ajustes} />`;
-  else if (ruta === 'itinerario') pantalla = html`<${Itinerario} />`;
+  else if (ruta === 'itinerario') pantalla = html`<${Itinerario} sub=${sub} />`;
   else if (ruta === 'reservas') pantalla = html`<${Reservas} />`;
+  else if (ruta === 'ideas') pantalla = html`<${Ideas} sub=${sub} />`;
   else pantalla = html`<${Pronto} ruta=${ruta} />`;
 
   return html`<div class="app">${pantalla}<${Nav} ruta=${ruta} /></div>`;
