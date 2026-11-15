@@ -8,7 +8,7 @@ import { Ajustes } from './pantallas/ajustes.js';
 import { Itinerario } from './pantallas/itinerario.js';
 import { Reservas } from './pantallas/reservas.js';
 import { Ideas } from './pantallas/ideas.js';
-import { Pronto } from './pantallas/pronto.js';
+import { Gastos } from './pantallas/gastos.js';
 
 const RUTAS = ['inicio', 'itinerario', 'reservas', 'ideas', 'gastos', 'ajustes'];
 
@@ -49,7 +49,7 @@ function App() {
   else if (ruta === 'itinerario') pantalla = html`<${Itinerario} sub=${sub} />`;
   else if (ruta === 'reservas') pantalla = html`<${Reservas} />`;
   else if (ruta === 'ideas') pantalla = html`<${Ideas} sub=${sub} />`;
-  else pantalla = html`<${Pronto} ruta=${ruta} />`;
+  else if (ruta === 'gastos') pantalla = html`<${Gastos} />`;
 
   return html`<div class="app">${pantalla}<${Nav} ruta=${ruta} /></div>`;
 }

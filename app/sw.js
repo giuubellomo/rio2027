@@ -1,6 +1,6 @@
 // Service worker: guarda la app en el celular para que abra sin señal.
 // Cada vez que se publica un cambio hay que subir VERSION, así los celulares bajan lo nuevo.
-const VERSION = 'v4';
+const VERSION = 'v5';
 const CACHE = 'rio2027-' + VERSION;
 
 const ARCHIVOS = [
@@ -17,6 +17,7 @@ const ARCHIVOS = [
   './js/app.js',
   './js/api.js',
   './js/config.js',
+  './js/cuentas.js',
   './js/db.js',
   './js/sesion.js',
   './js/sync.js',
@@ -24,10 +25,10 @@ const ARCHIVOS = [
   './js/util.js',
   './js/pantallas/ajustes.js',
   './js/pantallas/entrada.js',
+  './js/pantallas/gastos.js',
   './js/pantallas/ideas.js',
   './js/pantallas/inicio.js',
   './js/pantallas/itinerario.js',
-  './js/pantallas/pronto.js',
   './js/pantallas/reservas.js',
   './js/vendor/dexie.mjs',
   './js/vendor/preact-htm.js',
