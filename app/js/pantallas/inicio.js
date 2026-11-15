@@ -1,12 +1,14 @@
-// Inicio: cuenta regresiva (RF-07), ideas sin votar, reservas incompletas y saldo de gastos (RF-09) y modo "durante el viaje" (RF-10).
+// Inicio: cuenta regresiva (RF-07), palabra del día (RF-08), pendientes (RF-09), modo "durante el viaje" (RF-10) y accesos a Qué llevar y Fotos.
 import { html } from '../vendor/preact-htm.js';
 import { Avatar, Estrella, Flecha, PildoraSync, usePersonas, useSesion, useViaje, useYo } from '../ui.js';
-import { ahora, fechaLarga, momentoDelViaje } from '../util.js';
+import { ahora, fechaLarga, hoyISO, momentoDelViaje } from '../util.js';
 import { CATEGORIAS, quienesVan, useEventos } from './itinerario.js';
 import { faltanDatos as faltanEnReserva, useReservas } from './reservas.js';
 import { sinMiVoto, useIdeas } from './ideas.js';
 import { miSaldo, useCuentas } from './gastos.js';
 import { plata } from '../cuentas.js';
+import { sinDuena, useEquipaje } from './llevar.js';
+import { palabraDelDia } from '../palabras.js';
 
 export function Inicio() {
   const yo = useYo();
@@ -18,6 +20,10 @@ export function Inicio() {
   const { personaId } = useSesion();
   const porVotar = sinMiVoto(useIdeas(), personaId).length;
   const cuentas = useCuentas();
+  const equipaje = useEquipaje();
+  const libres = sinDuena(equipaje, personas).length;
+  const hayLista = equipaje.some((e) => e.tipo === 'grupo');
+  const palabra = palabraDelDia(hoyISO());
   const saldo = miSaldo(cuentas, personaId);
   const faltanDatos = viaje && (!viaje.fechaFin || !viaje.cambioUSD || !viaje.cambioUYU);
 
@@ -50,6 +56,19 @@ export function Inicio() {
           <h2 style="font-size:40px;line-height:0.95;max-width:240px">¡Qué viaje!</h2>
           <p style="font-size:14px;font-weight:600">Quedan los gastos y las fotos para repasar.</p>
         </section>`}
+
+      <div class="dos-columnas mosaico">
+        <section class="tarjeta" style="background:var(--amarillo)">
+          <p class="etiqueta">Palabra del día</p>
+          <p class="palabra" lang="pt-BR">${palabra.palabra}</p>
+          <p class="sub-mosaico">${palabra.significado}</p>
+        </section>
+        <a class="tarjeta" href="#/llevar" style="background:var(--menta)">
+          <p class="etiqueta">Qué llevar</p>
+          <p class="palabra">${libres || (hayLista ? '✓' : '+')}</p>
+          <p class="sub-mosaico">${libres === 0 ? (hayLista ? 'Todo tiene dueña' : 'Armar la lista') : libres === 1 ? 'cosa sin dueña' : 'cosas sin dueña'}</p>
+        </a>
+      </div>
 
       ${faltanDatos && html`
         <a class="tarjeta fila-link" href="#/ajustes" style="background:var(--coral)">
@@ -86,6 +105,14 @@ export function Inicio() {
           </div>
           <${Flecha} />
         </a>`}
+
+      <a class="tarjeta fila-link" href="#/fotos" style="background:var(--lila)">
+        <div class="texto">
+          <p class="sub">Fotos</p>
+          <p class="titulo">Álbum del grupo</p>
+        </div>
+        <${Flecha} />
+      </a>
 
       <section class="tarjeta" style="background:var(--celeste)">
         <p class="etiqueta clara">${personas.length === 1 ? '1 viajera' : `${personas.length} viajeras`}</p>

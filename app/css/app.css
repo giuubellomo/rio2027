@@ -413,3 +413,45 @@ a.cerrar { color: var(--tinta); }
 .fila-neto .monto.debe { color: #B4381A; }
 .fila-pago { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
 .fila-pago .texto { flex: 1; min-width: 160px; }
+
+/* ───────── Inicio: mosaico ───────── */
+.mosaico { gap: 12px; }
+.mosaico .tarjeta { min-height: 150px; justify-content: space-between; gap: 6px; color: var(--tinta); text-decoration: none; }
+.palabra { font-family: var(--titulos); font-size: 34px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+.sub-mosaico { font-size: 14px; font-weight: 700; line-height: 1.25; }
+
+/* ───────── Pantallas con volver (Qué llevar, Fotos) ───────── */
+.titulo-pantalla.con-volver { display: flex; align-items: flex-end; gap: 12px; padding-bottom: 12px; }
+.titulo-pantalla.con-volver .cerrar { margin-bottom: 2px; }
+.explica { font-size: 14px; font-weight: 700; padding: 0 4px; }
+
+/* ───────── Qué llevar ───────── */
+.item-llevar {
+  display: flex; align-items: center; gap: 8px; min-height: 64px; padding: 8px 8px 8px 6px;
+  border-radius: var(--pildora); border: 2.5px solid transparent;
+}
+.item-llevar.libre, .item-llevar.mio { background: var(--blanco); border: 2.5px dashed var(--tinta); }
+.item-llevar.mio { border-style: solid; border-width: 2px; }
+.item-llevar.mio.listo { background: var(--fondo); }
+.item-llevar.mio.listo .nombre { text-decoration: line-through; color: var(--suave); }
+.item-llevar .nombre {
+  flex: 1; min-width: 0; min-height: 44px; padding: 0 10px; border: 0; background: transparent;
+  color: inherit; font: inherit; font-size: 16px; font-weight: 800; text-align: left; overflow-wrap: anywhere;
+}
+.pildora-persona.claro { background: var(--blanco); padding-right: 12px; }
+.soltar {
+  width: 44px; height: 44px; flex-shrink: 0; border: 2px solid var(--tinta); border-radius: 50%;
+  background: var(--fondo); color: var(--tinta); display: inline-flex; align-items: center; justify-content: center;
+}
+.tilde {
+  width: 44px; height: 44px; flex-shrink: 0; border: 2.5px solid var(--tinta); border-radius: 50%;
+  background: var(--blanco); color: transparent; display: inline-flex; align-items: center; justify-content: center;
+}
+.tilde[aria-checked="true"] { background: var(--tinta); color: var(--amarillo); }
+.agregar-llevar { margin-top: 4px; }
+.agregar-llevar .entrada { flex: 1; min-width: 0; }
+.boton-agregar.oscuro { background: var(--tinta); color: var(--blanco); }
+.progreso-llevar { display: flex; flex-direction: column; gap: 12px; padding: 18px; border-radius: var(--radio-grande); }
+.progreso-llevar .barra { height: 16px; border: 2px solid var(--tinta); border-radius: var(--pildora); background: var(--blanco); overflow: hidden; }
+.progreso-llevar .barra span { display: block; height: 100%; background: var(--tinta); border-radius: var(--pildora); transition: width 0.25s; }
+@media (prefers-reduced-motion: reduce) { .progreso-llevar .barra span { transition: none; } }
