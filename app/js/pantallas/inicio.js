@@ -5,7 +5,7 @@ import { ahora, fechaLarga, horario, hoyISO, momentoDelViaje } from '../util.js'
 import { CATEGORIAS, quienesVan, useEventos } from './itinerario.js';
 import { faltanDatos as faltanEnReserva, useReservas } from './reservas.js';
 import { sinMiVoto, useIdeas } from './ideas.js';
-import { miSaldo, useCuentas } from './gastos.js';
+import { misDeudas, useCuentas } from './gastos.js';
 import { enPesos } from '../cuentas.js';
 import { sinDuena, useEquipaje } from './llevar.js';
 import { palabraDelDia } from '../palabras.js';
@@ -24,7 +24,7 @@ export function Inicio() {
   const libres = sinDuena(equipaje, personas).length;
   const hayLista = equipaje.some((e) => e.tipo === 'grupo');
   const palabra = palabraDelDia(hoyISO());
-  const saldo = miSaldo(cuentas, personaId);
+  const { debo, meDeben } = misDeudas(cuentas, personaId);
   const faltanDatos = viaje && (!viaje.fechaFin || !viaje.cambioUSD || !viaje.cambioUYU);
 
   return html`
@@ -101,7 +101,7 @@ export function Inicio() {
         <a class="tarjeta fila-link" href="#/gastos" style="background:var(--amarillo)">
           <div class="texto">
             <p class="sub">Gastos</p>
-            <p class="titulo">${saldo > 0 ? 'Te deben ' + enPesos(saldo, viaje) : saldo < 0 ? 'Debés ' + enPesos(-saldo, viaje) : 'Estás al día'}</p>
+            <p class="titulo">${[debo > 0 && 'Debés ' + enPesos(debo, viaje), meDeben > 0 && 'Te deben ' + enPesos(meDeben, viaje)].filter(Boolean).join(' · ') || 'Estás al día'}</p>
           </div>
           <${Flecha} />
         </a>`}

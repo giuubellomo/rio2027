@@ -122,3 +122,43 @@ export function enPesos(centavosReales, viaje) {
   const pesos = Math.round((centavosReales * cambio) / 100);
   return (pesos < 0 ? '−' : '') + '$U ' + formatoPesos.format(Math.abs(pesos));
 }
+
+/** Id de la deuda (y de su pago): gasto + quien debe. Así cada pago queda atado a su gasto. */
+export const idDeuda = (gastoId, deId) => gastoId + ':' + deId;
+
+/**
+ * Deudas una por una, sin compensar entre personas: cada participante le debe su parte a quien pagó.
+ * Devuelve { id, gasto, deId, aId, monto, pagado, falta } con montos en centavos de reales.
+ * Los pagos viejos que no están atados a un gasto se descuentan de las deudas más viejas entre esas dos personas.
+ */
+export function deudas(gastos, liquidaciones) {
+  const lista = [];
+  for (const g of gastos) {
+    for (const [deId, monto] of repartir(enReales(g), g.participantes || [])) {
+      if (deId === g.pagoId || monto <= 0) continue;
+      lista.push({ id: idDeuda(g.id, deId), gasto: g, deId, aId: g.pagoId, monto, pagado: 0 });
+    }
+  }
+  const porId = new Map(lista.map((d) => [d.id, d]));
+  const sueltos = [];
+  for (const l of liquidaciones) {
+    const d = porId.get(l.id);
+    if (d) d.pagado += l.monto;
+    else sueltos.push(l);
+  }
+  const antiguedad = [...lista].sort((a, b) => (a.gasto.fecha || '').localeCompare(b.gasto.fecha || ''));
+  for (const l of sueltos) {
+    let resto = l.monto;
+    for (const d of antiguedad) {
+      if (resto <= 0) break;
+      if (d.deId !== l.deId || d.aId !== l.aId) continue;
+      const usar = Math.min(resto, d.monto - d.pagado);
+      if (usar > 0) {
+        d.pagado += usar;
+        resto -= usar;
+      }
+    }
+  }
+  for (const d of lista) d.falta = Math.max(0, d.monto - d.pagado);
+  return lista;
+}

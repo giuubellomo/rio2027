@@ -467,3 +467,17 @@ a.cerrar { color: var(--tinta); }
 .entrada::-webkit-date-and-time-value { text-align: left; margin: 0; }
 .entrada::-webkit-datetime-edit { padding: 0; }
 .dos-columnas > .campo { min-width: 0; }
+
+/* Por pagar: una fila por gasto */
+.chico-saldo { font-size: 14px; font-weight: 700; }
+.chico-saldo strong { font-family: var(--titulos); font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.fila-deuda {
+  display: flex; align-items: center; gap: 12px; padding: 14px 14px 14px 16px;
+  border: 2px solid var(--tinta); border-radius: var(--radio-tarjeta); background: var(--blanco);
+}
+.fila-deuda.mia { background: var(--menta); }
+.fila-deuda .texto { flex: 1; min-width: 0; }
+.fila-deuda .titulo { font-size: 17px; font-weight: 800; overflow-wrap: anywhere; }
+.fila-deuda .sub { margin-top: 2px; font-size: 13px; font-weight: 600; }
+.fila-deuda .montos { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+.fila-deuda .monto { font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; }

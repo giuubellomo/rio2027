@@ -1,9 +1,9 @@
-// Gastos: cargar, repartir, balance y transferencias (RF-30 a RF-36).
+// Gastos: cargar, repartir, lo que falta pagar (gasto por gasto) y pagos hechos (RF-30 a RF-36).
 import { html, useState } from '../vendor/preact-htm.js';
 import { guardar, borrar, nuevoId, db } from '../db.js';
 import { Avatar, BotonAgregar, BotonBorrar, Hoja, useLive, usePersonas, useSesion, useViaje } from '../ui.js';
 import { fechaLarga, hoyISO } from '../util.js';
-import { MONEDAS, aCentavos, cambioDelViaje, centavosATexto, enPesos, enReales, netos, plata, repartir, transferencias } from '../cuentas.js';
+import { MONEDAS, aCentavos, cambioDelViaje, centavosATexto, deudas, enPesos, enReales, plata, repartir } from '../cuentas.js';
 
 /** Gastos y liquidaciones vivos, más todas las personas (también las borradas, para mostrar su nombre). */
 export function useCuentas() {
@@ -19,15 +19,15 @@ export function useCuentas() {
   }, [], { gastos: [], liquidaciones: [], todas: [] });
 }
 
-/** Mi saldo en centavos de reales: positivo = me deben (para Inicio). */
-export function miSaldo(cuentas, yoId) {
-  return netos(cuentas.gastos, cuentas.liquidaciones).get(yoId) || 0;
-}
-
-export function textoSaldo(c, viaje) {
-  if (c > 0) return { titulo: 'Te deben', monto: enPesos(c, viaje) };
-  if (c < 0) return { titulo: 'Debés', monto: enPesos(-c, viaje) };
-  return { titulo: 'Estás al día', monto: '' };
+/** Lo que debo y lo que me deben, sin compensar (centavos de reales). También para Inicio. */
+export function misDeudas(cuentas, yoId) {
+  const pendientes = deudas(cuentas.gastos, cuentas.liquidaciones).filter((d) => d.falta > 0);
+  const sumar = (lista) => lista.reduce((s, d) => s + d.falta, 0);
+  return {
+    pendientes,
+    debo: sumar(pendientes.filter((d) => d.deId === yoId)),
+    meDeben: sumar(pendientes.filter((d) => d.aId === yoId)),
+  };
 }
 
 export function Gastos() {
@@ -40,10 +40,7 @@ export function Gastos() {
 
   const nombre = (id) => (id === personaId ? 'Vos' : cuentas.todas.find((p) => p.id === id)?.nombre || 'Alguien');
   const total = cuentas.gastos.reduce((s, g) => s + enReales(g), 0);
-  const saldo = textoSaldo(miSaldo(cuentas, personaId), viaje);
-  const neto = netos(cuentas.gastos, cuentas.liquidaciones);
-  for (const p of personas) if (!neto.has(p.id)) neto.set(p.id, 0);
-  const pendientes = transferencias(neto);
+  const { pendientes, debo, meDeben } = misDeudas(cuentas, personaId);
 
   // Agrupados por día, del más nuevo al más viejo.
   const dias = [];
@@ -70,8 +67,9 @@ export function Gastos() {
           <p class="monto-grande">${enPesos(total, viaje)}</p>
         </div>
         <div class="mi-saldo">
-          <p class="etiqueta">${saldo.titulo}</p>
-          ${saldo.monto && html`<p class="monto-medio">${saldo.monto}</p>`}
+          ${!debo && !meDeben && html`<p class="etiqueta">Estás al día</p>`}
+          ${debo > 0 && html`<p class="chico-saldo">Debés <strong>${enPesos(debo, viaje)}</strong></p>`}
+          ${meDeben > 0 && html`<p class="chico-saldo">Te deben <strong>${enPesos(meDeben, viaje)}</strong></p>`}
         </div>
       </section>
 
@@ -86,7 +84,7 @@ export function Gastos() {
             <button type="button" class="boton chico" onClick=${() => setEditando({})}>Cargar el primero</button>
           </section>`}`}
 
-      ${vista === 'porPagar' && html`<${PorPagar} pendientes=${pendientes} neto=${neto} cuentas=${cuentas} viaje=${viaje} yoId=${personaId} nombre=${nombre} alVerPagos=${() => setVista('pagos')} />`}
+      ${vista === 'porPagar' && html`<${PorPagar} pendientes=${pendientes} cuentas=${cuentas} viaje=${viaje} yoId=${personaId} nombre=${nombre} />`}
       ${vista === 'pagos' && html`<${Pagos} cuentas=${cuentas} viaje=${viaje} nombre=${nombre} />`}
     </main>
     ${editando && html`<${FormGasto} gasto=${editando} personas=${personas} yoId=${personaId} alCerrar=${() => setEditando(null)} />`}
@@ -114,73 +112,75 @@ function FilaGasto({ g, viaje, yoId, nombre, alEditar }) {
 
 // ───────── Por pagar (RF-34 y RF-35) y Pagos ─────────
 
-function PorPagar({ pendientes, neto, cuentas, viaje, yoId, nombre, alVerPagos }) {
-  const persona = (id) => cuentas.todas.find((p) => p.id === id);
-  // Primero lo que me toca a mí (pagar o cobrar), después el resto.
-  const lista = [...pendientes].sort((a, b) => (b.deId === yoId || b.aId === yoId) - (a.deId === yoId || a.aId === yoId));
-  const filas = [...neto].sort((a, b) => b[1] - a[1]);
-
-  async function marcarPagada(t) {
-    await guardar('Liquidaciones', { id: nuevoId(), fecha: hoyISO(), deId: t.deId, aId: t.aId, monto: t.monto, deleted: false });
+function PorPagar({ pendientes, cuentas, viaje, yoId, nombre }) {
+  if (!pendientes.length) {
+    return html`<section class="tarjeta grande vacio" style="background:var(--menta)">
+      <p class="titulo-vacio">Están a mano 🎉</p>
+      <p>${cuentas.gastos.length ? 'No queda nada por pagar.' : 'Cuando carguen gastos, acá aparece quién le debe a quién.'}</p>
+    </section>`;
   }
+  const grupos = [
+    { titulo: 'Lo que debés', lista: pendientes.filter((d) => d.deId === yoId) },
+    { titulo: 'Lo que te deben', lista: pendientes.filter((d) => d.aId === yoId) },
+    { titulo: 'Entre las demás', lista: pendientes.filter((d) => d.deId !== yoId && d.aId !== yoId) },
+  ].filter((g) => g.lista.length);
 
   return html`
-    ${lista.length === 0
-      ? html`<section class="tarjeta grande vacio" style="background:var(--menta)">
-          <p class="titulo-vacio">Están a mano 🎉</p>
-          <p>${cuentas.gastos.length ? 'Nadie le debe nada a nadie.' : 'Cuando carguen gastos, acá aparece quién le paga a quién.'}</p>
-        </section>`
-      : html`<p class="explica">Lo que falta pagar para quedar a mano. Cuando alguien pague, tocá «Ya pagó» y pasa a Pagos.</p>`}
-    ${lista.map((t) => {
-      const mia = t.deId === yoId || t.aId === yoId;
-      return html`<div class=${'transferencia' + (mia ? ' mia' : '')}>
-        <div class="quienes">
-          <${Avatar} persona=${persona(t.deId)} tam=${36} />
-          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
-          <${Avatar} persona=${persona(t.aId)} tam=${36} />
-        </div>
-        <p class="texto"><strong>${nombre(t.deId)}</strong> ${t.deId === yoId ? 'le tenés que pagar' : 'le tiene que pagar'} a <strong>${nombre(t.aId).replace(/^Vos$/, 'vos')}</strong></p>
-        <div class="fila-saldo">
-          <p class="monto-medio">${enPesos(t.monto, viaje)}</p>
-          <button type="button" class="boton chico" onClick=${() => marcarPagada(t)}>Ya pagó</button>
-        </div>
-      </div>`;
-    })}
-
-    ${cuentas.gastos.length > 0 && html`
-      <section class="seccion">
-        <h2>Cómo está cada una</h2>
-        ${filas.map(([id, c]) => html`
-          <div class="fila-neto">
-            <${Avatar} persona=${persona(id)} tam=${36} />
-            <p class="texto">${nombre(id)}</p>
-            <p class=${'monto' + (c < 0 ? ' debe' : '')}>${c > 0 ? 'le deben ' + enPesos(c, viaje) : c < 0 ? 'debe ' + enPesos(-c, viaje) : 'a mano'}</p>
-          </div>`)}
-        ${cuentas.liquidaciones.length > 0 && html`<button type="button" class="boton-borde" style="align-self:flex-start" onClick=${alVerPagos}>Ver pagos hechos</button>`}
-      </section>`}
+    <p class="explica">Cada gasto por separado. Cuando alguien pague, tocá «Ya pagó» y pasa a Pagos.</p>
+    ${grupos.map((g) => html`
+      <h2 class="titulo-dia">${g.titulo}</h2>
+      ${g.lista.map((d) => html`<${FilaDeuda} key=${d.id} d=${d} viaje=${viaje} yoId=${yoId} nombre=${nombre} />`)}`)}
   `;
+}
+
+function FilaDeuda({ d, viaje, yoId, nombre }) {
+  const quien = d.deId === yoId
+    ? `Le debés a ${nombre(d.aId)}`
+    : d.aId === yoId
+      ? `${nombre(d.deId)} te debe`
+      : `${nombre(d.deId)} le debe a ${nombre(d.aId)}`;
+  async function marcarPagada() {
+    // El id del pago es el de la deuda: queda atado a este gasto.
+    await guardar('Liquidaciones', { id: d.id, fecha: hoyISO(), deId: d.deId, aId: d.aId, monto: d.monto, deleted: false });
+  }
+  return html`<div class=${'fila-deuda' + (d.deId === yoId ? ' mia' : '')}>
+    <div class="texto">
+      <p class="titulo">${d.gasto.descripcion}</p>
+      <p class="sub">${quien}${d.gasto.fecha ? ' · ' + fechaCorta(d.gasto.fecha) : ''}</p>
+      ${d.pagado > 0 && html`<p class="sub">Ya pagó ${enPesos(d.pagado, viaje)}, falta el resto</p>`}
+    </div>
+    <div class="montos">
+      <p class="monto">${enPesos(d.falta, viaje)}</p>
+      <button type="button" class="boton chico" onClick=${marcarPagada}>${d.deId === yoId ? 'Ya pagué' : 'Ya pagó'}</button>
+    </div>
+  </div>`;
+}
+
+function fechaCorta(iso) {
+  return fechaLarga(iso).replace(/^\S+ /, '');
 }
 
 function Pagos({ cuentas, viaje, nombre }) {
   if (!cuentas.liquidaciones.length) {
     return html`<section class="tarjeta grande vacio" style="background:var(--lila)">
       <p class="titulo-vacio">Todavía no hay pagos</p>
-      <p>Cuando alguien pague lo que debe, marcalo en «Por pagar» y queda anotado acá.</p>
+      <p>Cuando alguien pague, marcalo en «Por pagar» y queda anotado acá.</p>
     </section>`;
   }
+  const gasto = (l) => cuentas.gastos.find((g) => l.id.startsWith(g.id + ':'));
   return html`<section class="seccion">
     <h2>Pagos hechos</h2>
-    <p class="nota">Ya se descontaron del balance. Si marcaste uno por error, deshacelo y vuelve a «Por pagar».</p>
-    ${cuentas.liquidaciones.map((l) => html`<${FilaPago} key=${l.id} l=${l} viaje=${viaje} nombre=${nombre} />`)}
+    <p class="nota">Si marcaste uno por error, deshacelo y vuelve a «Por pagar».</p>
+    ${cuentas.liquidaciones.map((l) => html`<${FilaPago} key=${l.id} l=${l} gasto=${gasto(l)} viaje=${viaje} nombre=${nombre} />`)}
   </section>`;
 }
 
-function FilaPago({ l, viaje, nombre }) {
+function FilaPago({ l, gasto, viaje, nombre }) {
   const [confirmando, setConfirmando] = useState(false);
   return html`<div class="fila-pago">
     <div class="texto">
       <p><strong>${nombre(l.deId)}</strong> → <strong>${nombre(l.aId)}</strong> · ${enPesos(l.monto, viaje)}</p>
-      <p class="nota">${l.fecha ? fechaLarga(l.fecha) : ''}</p>
+      <p class="nota">${[gasto?.descripcion, l.fecha && 'pagado el ' + fechaCorta(l.fecha)].filter(Boolean).join(' · ')}</p>
     </div>
     ${confirmando
       ? html`<div class="acciones">
