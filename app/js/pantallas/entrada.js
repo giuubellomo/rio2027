@@ -13,7 +13,7 @@ export function Entrada() {
     <section class="portada">
       <${Estrella} tam=${190} />
       <p class="etiqueta">Viaje del grupo</p>
-      <h1>Río<br />2027</h1>
+      <h1>Brasil<br />2027</h1>
       <p class="bajada">Itinerario, reservas, ideas y gastos en un solo lugar.</p>
     </section>
     <main class="hoja">

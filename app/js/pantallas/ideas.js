@@ -1,8 +1,8 @@
 // Ideas: proponer, guardar links de TikTok o Reels, votar y pasar al itinerario (RF-21 a RF-29).
 import { html, useState, useEffect } from '../vendor/preact-htm.js';
 import { guardar, borrar, nuevoId, db } from '../db.js';
-import { Avatar, BotonAgregar, BotonBorrar, Flecha, Hoja, useLive, usePersonas, useSesion, useViaje } from '../ui.js';
-import { diasDelViaje, hoyISO, normalizar, partesDia } from '../util.js';
+import { Avatar, BotonAgregar, BotonBorrar, CampoDuracion, Flecha, Hoja, useLive, usePersonas, useSesion, useViaje } from '../ui.js';
+import { diasDelViaje, hoyISO, normalizar, partesDia, textoDuracion } from '../util.js';
 import { CATEGORIAS as CATEGORIAS_ITINERARIO, useEventos } from './itinerario.js';
 
 // Categorías que vienen de fábrica. Se guardan en la planilla recién cuando alguien las usa.
@@ -146,7 +146,7 @@ export function Ideas({ sub }) {
   return html`
     <header class="titulo-pantalla con-boton">
       <div>
-        <p class="chico">${faltanVotar === 0 ? (ideas.length ? 'Votaste todas las ideas' : 'Lo que queremos hacer en Río') : faltanVotar === 1 ? '1 idea espera tu voto' : `${faltanVotar} ideas esperan tu voto`}</p>
+        <p class="chico">${faltanVotar === 0 ? (ideas.length ? 'Votaste todas las ideas' : 'Lo que queremos hacer en Brasil') : faltanVotar === 1 ? '1 idea espera tu voto' : `${faltanVotar} ideas esperan tu voto`}</p>
         <h1>Ideas</h1>
       </div>
       <div style="display:flex;gap:8px">
@@ -233,6 +233,7 @@ function TarjetaIdea({ idea, categorias, personas, yoId }) {
     <div class="chips">
       <span class="chip claro">${cat?.nombre || 'Sin categoría'}</span>
       <${ChipFuente} idea=${idea} />
+      ${idea.duracion && html`<span class="chip claro">${textoDuracion(idea.duracion)}</span>`}
       <span style="flex:1"></span>
       ${idea.evento && html`<span class="chip claro">Agendada · ${diaCorto(idea.evento.fecha)}</span>`}
     </div>
@@ -300,6 +301,7 @@ function DetalleIdea({ idea, categorias, personas, yoId }) {
       <div class="chips">
         <span class="chip claro">${cat?.nombre || 'Sin categoría'}</span>
         <${ChipFuente} idea=${idea} texto="Ver" />
+        ${idea.duracion && html`<span class="chip claro">Dura ${textoDuracion(idea.duracion)}</span>`}
       </div>
       <h1>${idea.titulo}</h1>
       <p class="autora">${guardada ? 'Guardado por ' : 'Propuesta por '}${autora?.nombre || 'alguien'}</p>
@@ -370,6 +372,7 @@ function PasarAlItinerario({ idea, minimo }) {
       mapsUrl: '',
       categoria: CATEGORIAS_ITINERARIO[nombreCat] ? nombreCat : 'Otro',
       participantes: [],
+      duracion: idea.duracion || null,
       ideaId: idea.id,
       deleted: false,
     });
@@ -387,11 +390,11 @@ function PasarAlItinerario({ idea, minimo }) {
         </button>`;
       })}
     </div>
-    <div style="display:flex;align-items:center;gap:10px">
-      <label for="i-hora" style="font-weight:800">Hora</label>
-      <input id="i-hora" class="entrada" style="width:auto;flex:1" type="time" value=${hora} onInput=${(e) => setHora(e.currentTarget.value)} />
-      <span class="nota">opcional</span>
+    <div class="campo">
+      <label for="i-hora">Hora <span class="opcional">(opcional)</span></label>
+      <input id="i-hora" class="entrada" type="time" value=${hora} onInput=${(e) => setHora(e.currentTarget.value)} />
     </div>
+    ${idea.duracion && html`<p class="nota">Dura ${textoDuracion(idea.duracion)}.</p>`}
     <button type="button" class="boton" onClick=${agendar}>Agendar el ${semana.toLowerCase()} ${num}${hora ? ' a las ' + hora : ''}</button>
   </section>`;
 }
@@ -401,11 +404,11 @@ function PasarAlItinerario({ idea, minimo }) {
 function FormIdea({ idea, compartido, pegar, categorias, yoId, alCerrar }) {
   const nueva = !idea;
   const [form, setForm] = useState(() => {
-    if (idea) return { url: idea.url || '', titulo: idea.titulo, categoriaId: idea.categoriaId, nota: idea.nota || '', destino: idea.estado === 'guardada' ? 'guardada' : 'votacion' };
+    if (idea) return { url: idea.url || '', titulo: idea.titulo, categoriaId: idea.categoriaId, nota: idea.nota || '', duracion: idea.duracion || null, destino: idea.estado === 'guardada' ? 'guardada' : 'votacion' };
     const url = compartido ? compartido.url || extraerLink(compartido.text) : '';
     // El texto compartido suele traer el link pegado: se usa solo lo que no es link como título.
     const titulo = compartido ? (compartido.title || compartido.text || '').replace(/https?:\/\/\S+/g, '').trim().slice(0, 80) : '';
-    return { url, titulo, categoriaId: '', nota: '', destino: url ? 'guardada' : 'votacion' };
+    return { url, titulo, categoriaId: '', nota: '', duracion: null, destino: url ? 'guardada' : 'votacion' };
   });
   const [creando, setCreando] = useState(false);
   const [error, setError] = useState('');
@@ -438,6 +441,7 @@ function FormIdea({ idea, compartido, pegar, categorias, yoId, alCerrar }) {
       titulo,
       categoriaId: form.categoriaId,
       nota: form.nota.trim(),
+      duracion: form.duracion,
       url,
       fuente: detectarFuente(url),
       estado: idea ? (idea.estado === 'agendada' ? 'agendada' : form.destino) : form.destino,
@@ -455,7 +459,7 @@ function FormIdea({ idea, compartido, pegar, categorias, yoId, alCerrar }) {
     location.hash = '#/ideas';
   }
 
-  return html`<${Hoja} titulo=${nueva ? (pegar || compartido ? 'Guardar en Río' : 'Nueva idea') : 'Editar idea'} alCerrar=${alCerrar}>
+  return html`<${Hoja} titulo=${nueva ? (pegar || compartido ? 'Guardar link' : 'Nueva idea') : 'Editar idea'} alCerrar=${alCerrar}>
     <form class="formulario" onSubmit=${enviar}>
       <div class="campo">
         <label for="i-url">Link ${!(pegar || compartido) && html`<span class="opcional">(opcional)</span>`}</label>
@@ -483,6 +487,7 @@ function FormIdea({ idea, compartido, pegar, categorias, yoId, alCerrar }) {
         <label for="i-nota">Nota <span class="opcional">(opcional)</span></label>
         <textarea id="i-nota" class="entrada area" rows="2" maxlength="500" placeholder="Por qué está bueno, cuánto sale, horarios…" value=${form.nota} onInput=${cambiar('nota')}></textarea>
       </div>
+      <${CampoDuracion} id="i-dur" valor=${form.duracion} alCambiar=${(duracion) => setForm({ ...form, duracion })} />
       ${(nueva || idea.estado === 'guardada') && html`
         <div class="destinos" role="radiogroup" aria-label="Dónde guardarla">
           <button type="button" role="radio" aria-checked=${form.destino === 'votacion' ? 'true' : 'false'} style="background:var(--lila)" onClick=${() => setForm({ ...form, destino: 'votacion' })}>

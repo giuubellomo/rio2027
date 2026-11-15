@@ -1,6 +1,6 @@
 // Service worker: guarda la app en el celular para que abra sin señal.
 // Cada vez que se publica un cambio hay que subir VERSION, así los celulares bajan lo nuevo.
-const VERSION = 'v6';
+const VERSION = 'v7';
 const CACHE = 'rio2027-' + VERSION;
 
 const ARCHIVOS = [

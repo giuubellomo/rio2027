@@ -455,3 +455,15 @@ a.cerrar { color: var(--tinta); }
 .progreso-llevar .barra { height: 16px; border: 2px solid var(--tinta); border-radius: var(--pildora); background: var(--blanco); overflow: hidden; }
 .progreso-llevar .barra span { display: block; height: 100%; background: var(--tinta); border-radius: var(--pildora); transition: width 0.25s; }
 @media (prefers-reduced-motion: reduce) { .progreso-llevar .barra span { transition: none; } }
+.transferencia.mia { background: var(--menta); border-style: solid; }
+.segmentos button { padding: 0 8px; }
+
+/* Fecha y hora: en iPhone ignoran el ancho y se desbordan si no se les saca el estilo nativo. */
+.entrada[type="date"], .entrada[type="time"] {
+  -webkit-appearance: none; appearance: none;
+  display: block; width: 100%; min-width: 0; max-width: 100%;
+  line-height: 48px; text-align: left;
+}
+.entrada::-webkit-date-and-time-value { text-align: left; margin: 0; }
+.entrada::-webkit-datetime-edit { padding: 0; }
+.dos-columnas > .campo { min-width: 0; }

@@ -20,6 +20,7 @@ function hoja(nombre) {
     getName: () => nombre,
     getMaxRows: () => 1000,
     getLastRow: () => datos().length,
+    getLastColumn: () => Math.max(0, ...datos().map((f) => f.length)),
     setFrozenRows() {},
     getRange(fila, col, nFilas, nCols) {
       return {

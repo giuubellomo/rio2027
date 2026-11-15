@@ -1,8 +1,8 @@
 // Reservas: vuelos, alojamiento y traslados (RF-17 a RF-20).
 import { html, useState } from '../vendor/preact-htm.js';
 import { guardar, borrar, nuevoId, db } from '../db.js';
-import { BotonAgregar, BotonBorrar, Flecha, Hoja, useLive } from '../ui.js';
-import { ahora, fechaLarga, linkMaps, porFechaHora } from '../util.js';
+import { BotonAgregar, BotonBorrar, CampoDuracion, Flecha, Hoja, useLive } from '../ui.js';
+import { ahora, diasEntre, fechaLarga, horario, linkMaps, porFechaHora } from '../util.js';
 
 export const TIPOS_RESERVA = {
   vuelo: { nombre: 'Vuelo', color: 'var(--lila)', obligatorios: ['fecha', 'hora', 'codigo'], ejemplo: 'MVD → GIG' },
@@ -67,7 +67,12 @@ function TarjetaReserva({ r, proxima, alEditar }) {
   const tipo = TIPOS_RESERVA[r.tipo] || TIPOS_RESERVA.vuelo;
   const faltan = faltanDatos(r);
   const maps = linkMaps(r.direccion);
-  const cuando = [r.fecha && (r.tipo === 'alojamiento' ? 'Check-in ' : '') + fechaLarga(r.fecha), r.hora].filter(Boolean).join(' · ');
+  const alojamiento = r.tipo === 'alojamiento';
+  const cuando = alojamiento
+    ? [r.fecha && 'Check-in ' + fechaLarga(r.fecha), r.hora].filter(Boolean).join(' · ')
+    : [r.fecha && fechaLarga(r.fecha), horario(r.hora, r.duracion)].filter(Boolean).join(' · ');
+  const noches = alojamiento && r.fecha && r.fechaFin ? diasEntre(r.fecha, r.fechaFin) : 0;
+  const salida = alojamiento && r.fechaFin ? 'Check-out ' + fechaLarga(r.fechaFin) + (noches > 0 ? ` · ${noches} ${noches === 1 ? 'noche' : 'noches'}` : '') : '';
 
   return html`<article class=${'tarjeta reserva' + (faltan.length ? ' incompleta' : '')} style=${faltan.length ? '' : 'background:' + tipo.color}>
     <div class="chips">
@@ -79,6 +84,7 @@ function TarjetaReserva({ r, proxima, alEditar }) {
     <div>
       <h2 class="titulo-tarjeta">${r.titulo}</h2>
       ${cuando && html`<p class="sub-tarjeta">${cuando}</p>`}
+      ${salida && html`<p class="sub-tarjeta">${salida}</p>`}
       ${r.detalle && html`<p class="sub-tarjeta detalle">${r.detalle}</p>`}
       ${r.direccion && html`<p class="sub-tarjeta">${r.direccion}</p>`}
     </div>
@@ -117,13 +123,16 @@ function FormReserva({ reserva, alCerrar }) {
     tipo: reserva.tipo || 'vuelo',
     titulo: reserva.titulo || '',
     fecha: reserva.fecha || '',
+    fechaFin: reserva.fechaFin || '',
     hora: reserva.hora || '',
     codigo: reserva.codigo || '',
     direccion: reserva.direccion || '',
     detalle: reserva.detalle || '',
   });
+  const [duracion, setDuracion] = useState(reserva.duracion || null);
   const [error, setError] = useState('');
   const tipo = TIPOS_RESERVA[form.tipo];
+  const alojamiento = form.tipo === 'alojamiento';
   const cambiar = (campo) => (e) => {
     setForm({ ...form, [campo]: e.currentTarget.value });
     setError('');
@@ -134,7 +143,9 @@ function FormReserva({ reserva, alCerrar }) {
     const limpio = Object.fromEntries(Object.entries(form).map(([k, v]) => [k, v.trim()]));
     if (!limpio.titulo) return setError('Poné un título, por ejemplo «' + tipo.ejemplo + '».');
     limpio.codigo = limpio.codigo.toUpperCase();
-    await guardar('Reservas', { ...reserva, id: reserva.id || nuevoId(), ...limpio, deleted: false });
+    if (!alojamiento) limpio.fechaFin = '';
+    if (limpio.fechaFin && limpio.fecha && limpio.fechaFin <= limpio.fecha) return setError('El check-out tiene que ser después del check-in.');
+    await guardar('Reservas', { ...reserva, id: reserva.id || nuevoId(), ...limpio, duracion: alojamiento ? null : duracion, deleted: false });
     alCerrar();
   }
 
@@ -159,14 +170,25 @@ function FormReserva({ reserva, alCerrar }) {
       </div>
       <div class="dos-columnas">
         <div class="campo">
-          <label for="r-fecha">${form.tipo === 'alojamiento' ? 'Check-in' : 'Fecha'}</label>
+          <label for="r-fecha">${alojamiento ? 'Check-in' : 'Fecha'}</label>
           <input id="r-fecha" class="entrada" type="date" value=${form.fecha} onInput=${cambiar('fecha')} />
         </div>
-        <div class="campo">
-          <label for="r-hora">Hora</label>
-          <input id="r-hora" class="entrada" type="time" value=${form.hora} onInput=${cambiar('hora')} />
-        </div>
+        ${alojamiento
+          ? html`<div class="campo">
+              <label for="r-hasta">Check-out</label>
+              <input id="r-hasta" class="entrada" type="date" min=${form.fecha} value=${form.fechaFin} onInput=${cambiar('fechaFin')} />
+            </div>`
+          : html`<div class="campo">
+              <label for="r-hora">Hora</label>
+              <input id="r-hora" class="entrada" type="time" value=${form.hora} onInput=${cambiar('hora')} />
+            </div>`}
       </div>
+      ${alojamiento
+        ? html`<div class="campo">
+            <label for="r-hora">Hora del check-in <span class="opcional">(opcional)</span></label>
+            <input id="r-hora" class="entrada" type="time" value=${form.hora} onInput=${cambiar('hora')} />
+          </div>`
+        : html`<${CampoDuracion} id="r-dur" valor=${duracion} alCambiar=${setDuracion} />`}
       <div class="campo">
         <label for="r-codigo">Código de reserva</label>
         <input id="r-codigo" class="entrada mono" type="text" maxlength="40" autocomplete="off" autocapitalize="characters" spellcheck="false"

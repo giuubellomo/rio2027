@@ -108,3 +108,17 @@ export function transferencias(neto) {
   }
   return lista;
 }
+
+const formatoPesos = new Intl.NumberFormat('es-UY', { maximumFractionDigits: 0 });
+
+/**
+ * Para mostrar: centavos de reales → «$U 1.250» (pesos enteros, con el cambio de Ajustes).
+ * Las cuentas se siguen haciendo en reales; solo cambia cómo se ven.
+ * Sin tipo de cambio cargado, se muestra en reales.
+ */
+export function enPesos(centavosReales, viaje) {
+  const cambio = viaje?.cambioUYU;
+  if (!cambio) return plata(centavosReales, 'BRL');
+  const pesos = Math.round((centavosReales * cambio) / 100);
+  return (pesos < 0 ? '−' : '') + '$U ' + formatoPesos.format(Math.abs(pesos));
+}

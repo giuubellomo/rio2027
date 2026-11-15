@@ -4,7 +4,7 @@ import { liveQuery } from './vendor/dexie.mjs';
 import { db } from './db.js';
 import { sesion } from './sesion.js';
 import { estadoSync, escucharSync, sincronizar } from './sync.js';
-import { inicial } from './util.js';
+import { DURACIONES, inicial, textoDuracion } from './util.js';
 
 /** Resultado de una consulta a la base local que se actualiza solo cuando cambian los datos. */
 export function useLive(consulta, deps = [], inicialValor) {
@@ -157,4 +157,17 @@ export function Nav({ ruta }) {
         <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${ICONOS[id]}</svg>
       </a>`)}
   </nav>`;
+}
+
+/** Selector de duración opcional. Guarda minutos (número) o null. */
+export function CampoDuracion({ id, valor, alCambiar }) {
+  // Si guardaron una duración que no está en la lista, se ofrece igual para no perderla.
+  const opciones = valor && !DURACIONES.includes(valor) ? [...DURACIONES, valor].sort((a, b) => a - b) : DURACIONES;
+  return html`<div class="campo">
+    <label for=${id}>Duración <span class="opcional">(opcional)</span></label>
+    <select id=${id} class="entrada" value=${valor || ''} onChange=${(e) => alCambiar(Number(e.currentTarget.value) || null)}>
+      <option value="">Sin definir</option>
+      ${opciones.map((m) => html`<option value=${m}>${textoDuracion(m)}</option>`)}
+    </select>
+  </div>`;
 }

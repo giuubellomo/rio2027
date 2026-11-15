@@ -1,12 +1,12 @@
 // Inicio: cuenta regresiva (RF-07), palabra del día (RF-08), pendientes (RF-09), modo "durante el viaje" (RF-10) y accesos a Qué llevar y Fotos.
 import { html } from '../vendor/preact-htm.js';
 import { Avatar, Estrella, Flecha, PildoraSync, usePersonas, useSesion, useViaje, useYo } from '../ui.js';
-import { ahora, fechaLarga, hoyISO, momentoDelViaje } from '../util.js';
+import { ahora, fechaLarga, horario, hoyISO, momentoDelViaje } from '../util.js';
 import { CATEGORIAS, quienesVan, useEventos } from './itinerario.js';
 import { faltanDatos as faltanEnReserva, useReservas } from './reservas.js';
 import { sinMiVoto, useIdeas } from './ideas.js';
 import { miSaldo, useCuentas } from './gastos.js';
-import { plata } from '../cuentas.js';
+import { enPesos } from '../cuentas.js';
 import { sinDuena, useEquipaje } from './llevar.js';
 import { palabraDelDia } from '../palabras.js';
 
@@ -32,7 +32,7 @@ export function Inicio() {
       <a class="quien" href="#/ajustes" aria-label="Ajustes">
         <${Avatar} persona=${yo} tam=${44} />
         <div>
-          <p class="chico">${viaje?.nombre || 'Río 2027'}</p>
+          <p class="chico">${viaje?.nombre || 'Brasil 2027'}</p>
           <p class="grande">Oi, ${yo?.nombre || ''}!</p>
         </div>
       </a>
@@ -101,7 +101,7 @@ export function Inicio() {
         <a class="tarjeta fila-link" href="#/gastos" style="background:var(--amarillo)">
           <div class="texto">
             <p class="sub">Gastos</p>
-            <p class="titulo">${saldo > 0 ? 'Te deben ' + plata(saldo) : saldo < 0 ? 'Debés ' + plata(-saldo) : 'Estás al día'}</p>
+            <p class="titulo">${saldo > 0 ? 'Te deben ' + enPesos(saldo, viaje) : saldo < 0 ? 'Debés ' + enPesos(-saldo, viaje) : 'Estás al día'}</p>
           </div>
           <${Flecha} />
         </a>`}
@@ -131,13 +131,14 @@ function DuranteElViaje({ dia, personas, reservas }) {
   // Lo que sigue hoy: lo que todavía no empezó, o lo que empezó hace menos de una hora.
   const pendientes = deHoy.filter((e) => !e.hora || e.hora >= restarHora(hora));
   const [proximo, despues] = [...pendientes, ...eventos.filter((e) => e.fecha > fecha)];
-  const noche = reservas.filter((r) => r.tipo === 'alojamiento' && r.fecha && r.fecha <= fecha).pop();
+  // Donde se duerme hoy: check-in ya pasó y el check-out todavía no.
+  const noche = reservas.filter((r) => r.tipo === 'alojamiento' && r.fecha && r.fecha <= fecha && (!r.fechaFin || fecha < r.fechaFin)).pop();
 
   return html`
     <section class="tarjeta grande" style="background:var(--menta)">
       <${Estrella} tam=${130} />
       <p class="etiqueta">Día ${dia}</p>
-      <h2 style="font-size:40px;line-height:0.95;max-width:240px">¡Estamos en Río!</h2>
+      <h2 style="font-size:40px;line-height:0.95;max-width:240px">¡Estamos en Brasil!</h2>
       ${!proximo && html`<p style="font-size:14px;font-weight:600">No queda nada agendado. Día libre.</p>`}
     </section>
     ${proximo && html`<${Proximo} e=${proximo} etiqueta=${proximo.fecha === fecha ? 'Lo próximo' : fechaLarga(proximo.fecha)} personas=${personas} />`}
@@ -156,7 +157,7 @@ function DuranteElViaje({ dia, personas, reservas }) {
 function Proximo({ e, etiqueta, personas }) {
   return html`<a class="tarjeta fila-link" href="#/itinerario" style=${'background:' + (CATEGORIAS[e.categoria] || 'var(--blanco)') + ';border:2px solid var(--tinta)'}>
     <div class="texto">
-      <p class="sub">${etiqueta}${e.hora ? ' · ' + e.hora : ''}</p>
+      <p class="sub">${etiqueta}${e.hora ? ' · ' + horario(e.hora, e.duracion) : ''}</p>
       <p class="titulo">${e.titulo}</p>
       <p class="sub">${[e.lugar, quienesVan(e, personas)].filter(Boolean).join(' · ')}</p>
     </div>

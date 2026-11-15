@@ -82,3 +82,28 @@ export function linkMaps(lugar, url) {
   if (lugar) return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(lugar);
   return null;
 }
+
+// Duración (opcional) en minutos: actividades, ideas, vuelos y traslados.
+export const DURACIONES = [15, 30, 45, 60, 90, 120, 150, 180, 240, 300, 360, 480, 720];
+
+/** 90 → '1 h 30' · 45 → '45 min' · 720 → '12 h' */
+export function textoDuracion(min) {
+  if (!min) return '';
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  if (!h) return m + ' min';
+  return m ? `${h} h ${String(m).padStart(2, '0')}` : `${h} h`;
+}
+
+/** '10:30' + 90 → '12:00' (si pasa de medianoche, da la hora del día siguiente). */
+export function horaMas(hhmm, min) {
+  if (!hhmm || !min) return '';
+  const total = (Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5)) + min) % 1440;
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+}
+
+/** '10:00' y 120 → '10:00 – 12:00' · sin hora → '2 h' */
+export function horario(hora, duracion) {
+  if (hora && duracion) return `${hora} – ${horaMas(hora, duracion)}`;
+  return hora || textoDuracion(duracion);
+}

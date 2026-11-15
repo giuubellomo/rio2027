@@ -1,8 +1,8 @@
 // Itinerario: días del viaje y sus actividades (RF-12 a RF-16).
 import { html, useState, useEffect, useRef } from '../vendor/preact-htm.js';
 import { guardar, borrar, nuevoId, db } from '../db.js';
-import { Avatar, BotonAgregar, BotonBorrar, Flecha, Hoja, useLive, usePersonas, useViaje } from '../ui.js';
-import { diasDelViaje, fechaLarga, hoyISO, linkMaps, partesDia, porFechaHora } from '../util.js';
+import { Avatar, BotonAgregar, BotonBorrar, CampoDuracion, Flecha, Hoja, useLive, usePersonas, useViaje } from '../ui.js';
+import { diasDelViaje, fechaLarga, horario, hoyISO, linkMaps, partesDia, porFechaHora } from '../util.js';
 
 export const CATEGORIAS = {
   Playa: 'var(--celeste)',
@@ -57,7 +57,7 @@ export function Itinerario({ sub }) {
 
   return html`
     <header class="titulo-pantalla con-boton">
-      <div><p class="chico">${viaje?.nombre || 'Río 2027'}</p><h1>Itinerario</h1></div>
+      <div><p class="chico">${viaje?.nombre || 'Brasil 2027'}</p><h1>Itinerario</h1></div>
       <${BotonAgregar} etiqueta="Agregar actividad" onClick=${() => setEditando({ fecha: dia })} />
     </header>
     <div class="tira-dias" role="group" aria-label="Días" ref=${tira}>
@@ -102,7 +102,8 @@ function TarjetaEvento({ e, personas, alEditar }) {
   return html`<article class=${'tarjeta evento' + (color === CATEGORIAS.Otro ? ' borde' : '')} style=${'background:' + color}>
     <button type="button" class="tocar-editar" aria-label=${'Editar ' + e.titulo} onClick=${alEditar}></button>
     <div class="chips">
-      <span class="chip oscuro hora">${e.hora || 'Sin hora'}</span>
+      <span class="chip oscuro hora">${e.hora ? horario(e.hora, e.duracion) : 'Sin hora'}</span>
+      ${!e.hora && e.duracion && html`<span class="chip suave">${horario('', e.duracion)}</span>`}
       ${e.categoria && html`<span class="chip suave">${e.categoria}</span>`}
       ${e.ideaId && html`<span class="chip suave">Votada en Ideas</span>`}
     </div>
@@ -126,6 +127,7 @@ function FormEvento({ evento, dias, personas, alCerrar }) {
     lugar: evento.lugar || '',
     mapsUrl: evento.mapsUrl || '',
     participantes: evento.participantes || [],
+    duracion: evento.duracion || null,
   });
   const [error, setError] = useState('');
   const cambiar = (campo) => (e) => {
@@ -158,6 +160,7 @@ function FormEvento({ evento, dias, personas, alCerrar }) {
       lugar: form.lugar.trim(),
       mapsUrl,
       participantes,
+      duracion: form.duracion,
       ideaId: evento.ideaId || '',
       deleted: false,
     });
@@ -187,6 +190,7 @@ function FormEvento({ evento, dias, personas, alCerrar }) {
           <input id="e-hora" class="entrada" type="time" value=${form.hora} onInput=${cambiar('hora')} />
         </div>
       </div>
+      <${CampoDuracion} id="e-dur" valor=${form.duracion} alCambiar=${(duracion) => setForm({ ...form, duracion })} />
       <div class="campo">
         <span class="rotulo-campo" id="e-cat">Categoría</span>
         <div class="opciones" role="radiogroup" aria-labelledby="e-cat">

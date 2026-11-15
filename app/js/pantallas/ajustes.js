@@ -9,7 +9,7 @@ import { Avatar, useSync, useViaje, useYo } from '../ui.js';
 export function Ajustes() {
   const yo = useYo();
   return html`
-    <header class="titulo-pantalla"><p class="chico">Río 2027</p><h1>Ajustes</h1></header>
+    <header class="titulo-pantalla"><p class="chico">Brasil 2027</p><h1>Ajustes</h1></header>
     <main class="contenido">
       <section class="seccion">
         <h2>Vos</h2>
@@ -51,7 +51,7 @@ function DatosViaje() {
     if (usd === false || uyu === false) return setMensaje({ error: 'El tipo de cambio tiene que ser un número mayor a 0.' });
     await guardar('Viaje', {
       ...viaje,
-      nombre: form.nombre.trim() || 'Río 2027',
+      nombre: form.nombre.trim() || 'Brasil 2027',
       fechaInicio: form.fechaInicio,
       fechaFin: form.fechaFin,
       cambioUSD: usd,

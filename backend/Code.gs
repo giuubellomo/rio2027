@@ -1,5 +1,5 @@
 /**
- * Río 2027 — backend de la app.
+ * Brasil 2027 — backend de la app.
  *
  * Instalación (una sola vez):
  *   1. Ejecutá setup(): crea las pestañas y el código del viaje (lo ves en el registro).
@@ -15,9 +15,9 @@
 const TABLAS = {
   Viaje:         { nombre: 's', fechaInicio: 's', fechaFin: 's', monedaBase: 's', cambioUSD: 'n', cambioUYU: 'n', linkAlbum: 's' },
   Personas:      { nombre: 's', color: 's' },
-  Itinerario:    { fecha: 's', hora: 's', titulo: 's', lugar: 's', mapsUrl: 's', categoria: 's', participantes: 'j', ideaId: 's' },
-  Reservas:      { tipo: 's', titulo: 's', fecha: 's', hora: 's', detalle: 's', codigo: 's', direccion: 's' },
-  Ideas:         { titulo: 's', categoriaId: 's', nota: 's', url: 's', fuente: 's', estado: 's', personaId: 's' },
+  Itinerario:    { fecha: 's', hora: 's', titulo: 's', lugar: 's', mapsUrl: 's', categoria: 's', participantes: 'j', ideaId: 's', duracion: 'n' },
+  Reservas:      { tipo: 's', titulo: 's', fecha: 's', hora: 's', detalle: 's', codigo: 's', direccion: 's', fechaFin: 's', duracion: 'n' },
+  Ideas:         { titulo: 's', categoriaId: 's', nota: 's', url: 's', fuente: 's', estado: 's', personaId: 's', duracion: 'n' },
   Votos:         { ideaId: 's', personaId: 's', valor: 'n' },
   Categorias:    { nombre: 's' },
   Gastos:        { fecha: 's', monto: 'n', moneda: 's', cambio: 'n', descripcion: 's', pagoId: 's', participantes: 'j' },
@@ -56,7 +56,7 @@ function setup() {
   const viaje = ss.getSheetByName('Viaje');
   if (viaje.getLastRow() < 2) {
     const reloj = { t: Number(props.getProperty('RELOJ') || 0) };
-    const fila = ['viaje', 'Río 2027', '2027-01-18', '', 'BRL', '', '', '', String(avanzar_(reloj)), 'false'];
+    const fila = ['viaje', 'Brasil 2027', '2027-01-18', '', 'BRL', '', '', '', String(avanzar_(reloj)), 'false'];
     viaje.getRange(2, 1, 1, fila.length).setNumberFormat('@').setValues([fila]);
     props.setProperty('RELOJ', String(reloj.t));
   }
@@ -89,7 +89,7 @@ function normalizarCodigo_(c) {
 // ───────────────────────── API ─────────────────────────
 
 function doGet() {
-  return ContentService.createTextOutput('Río 2027: el backend funciona.');
+  return ContentService.createTextOutput('Brasil 2027: el backend funciona.');
 }
 
 /**
@@ -162,11 +162,20 @@ function cargar_(ss, cache, tabla) {
   if (!sh) throw new Error('Falta la pestaña ' + tabla + '. Ejecutá setup().');
   const cols = columnas_(tabla);
   const n = sh.getLastRow();
-  const filas = n > 1 ? sh.getRange(1, 1, n, cols.length).getValues() : [cols.slice()];
-  filas[0] = cols.slice();
+  const ancho = Math.max(sh.getLastColumn(), 1);
+  const crudo = n > 0 ? sh.getRange(1, 1, n, ancho).getValues() : [[]];
+  // Las columnas se buscan por el nombre del encabezado: si se agregan columnas nuevas,
+  // los datos viejos se reacomodan solos y se guardan con el orden nuevo en la próxima escritura.
+  const cabecera = crudo[0].map(String);
+  const posicion = cols.map(function (c) { return cabecera.indexOf(c); });
+  const igual = posicion.every(function (p, i) { return p === i; });
+  const filas = [cols.slice()];
+  for (let i = 1; i < crudo.length; i++) {
+    filas.push(posicion.map(function (p) { return p < 0 ? '' : crudo[i][p]; }));
+  }
   const indice = {};
   for (let i = 1; i < filas.length; i++) indice[String(filas[i][0])] = i;
-  cache[tabla] = { sh: sh, cols: cols, filas: filas, indice: indice, sucio: false };
+  cache[tabla] = { sh: sh, cols: cols, filas: filas, indice: indice, sucio: !igual && n > 0 };
   return cache[tabla];
 }
 
