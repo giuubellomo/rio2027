@@ -2,7 +2,8 @@
 import { html, useState, useEffect, useRef } from '../vendor/preact-htm.js';
 import { guardar, borrar, nuevoId, db } from '../db.js';
 import { Avatar, BotonAgregar, BotonBorrar, CampoDuracion, Flecha, Hoja, useLive, usePersonas, useViaje } from '../ui.js';
-import { diasDelViaje, fechaLarga, horario, hoyISO, linkMaps, partesDia, porFechaHora } from '../util.js';
+import { diasDelViaje, fechaLarga, horario, hoyISO, partesDia, porFechaHora } from '../util.js';
+import { CampoUbicacion, linkAlLugar, tieneUbicacion } from '../lugares.js';
 
 export const CATEGORIAS = {
   Playa: 'var(--celeste)',
@@ -69,7 +70,10 @@ export function Itinerario({ sub }) {
         </button>`;
       })}
     </div>
-    <p class="titulo-dia">${fechaLarga(dia)}${apodoDia(dias, dia)}</p>
+    <div class="fila-titulo-dia">
+      <p class="titulo-dia">${fechaLarga(dia)}${apodoDia(dias, dia)}</p>
+      ${delDia.length > 0 && html`<a class="boton-borde" href=${'#/mapa/' + dia}>Ver en el mapa</a>`}
+    </div>
     <main class="contenido">
       ${delDia.map((e) => html`<${TarjetaEvento} key=${e.id} e=${e} personas=${personas} alEditar=${() => setEditando(e)} />`)}
       ${viaje && delDia.length === 0 && html`
@@ -96,7 +100,7 @@ function apodoDia(dias, dia) {
 }
 
 function TarjetaEvento({ e, personas, alEditar }) {
-  const maps = linkMaps(e.lugar, e.mapsUrl);
+  const maps = linkAlLugar(e);
   const color = CATEGORIAS[e.categoria] || CATEGORIAS.Otro;
   const quien = quienesVan(e, personas);
   return html`<article class=${'tarjeta evento' + (color === CATEGORIAS.Otro ? ' borde' : '')} style=${'background:' + color}>
@@ -126,6 +130,8 @@ function FormEvento({ evento, dias, personas, alCerrar }) {
     categoria: evento.categoria || '',
     lugar: evento.lugar || '',
     mapsUrl: evento.mapsUrl || '',
+    lat: evento.lat ?? null,
+    lng: evento.lng ?? null,
     participantes: evento.participantes || [],
     duracion: evento.duracion || null,
   });
@@ -159,6 +165,8 @@ function FormEvento({ evento, dias, personas, alCerrar }) {
       categoria: form.categoria,
       lugar: form.lugar.trim(),
       mapsUrl,
+      lat: tieneUbicacion(form) ? form.lat : null,
+      lng: tieneUbicacion(form) ? form.lng : null,
       participantes,
       duracion: form.duracion,
       ideaId: evento.ideaId || '',
@@ -199,15 +207,7 @@ function FormEvento({ evento, dias, personas, alCerrar }) {
               onClick=${() => setForm({ ...form, categoria: form.categoria === nombre ? '' : nombre })}>${nombre}</button>`)}
         </div>
       </div>
-      <div class="campo">
-        <label for="e-lugar">Dónde</label>
-        <input id="e-lugar" class="entrada" type="text" maxlength="120" placeholder="Ipanema" value=${form.lugar} onInput=${cambiar('lugar')} />
-      </div>
-      <div class="campo">
-        <label for="e-maps">Link de Maps <span class="opcional">(opcional)</span></label>
-        <input id="e-maps" class="entrada" type="url" inputmode="url" maxlength="500" placeholder="https://maps.app.goo.gl/…" value=${form.mapsUrl} onInput=${cambiar('mapsUrl')} />
-        <p class="ayuda">Si no ponés link, Maps busca por el lugar.</p>
-      </div>
+      <${CampoUbicacion} id="e-ubic" valor=${form} pista=${form.titulo} alCambiar=${(cambio) => setForm(cambio)} />
       ${personas.length > 1 && html`
         <div class="campo">
           <span class="rotulo-campo" id="e-quien">Quiénes van</span>

@@ -4,6 +4,7 @@ import { guardar, borrar, nuevoId, db } from '../db.js';
 import { Avatar, BotonAgregar, BotonBorrar, CampoDuracion, Flecha, Hoja, useLive, usePersonas, useSesion, useViaje } from '../ui.js';
 import { diasDelViaje, hoyISO, normalizar, partesDia, textoDuracion } from '../util.js';
 import { CATEGORIAS as CATEGORIAS_ITINERARIO, useEventos } from './itinerario.js';
+import { CampoUbicacion, tieneUbicacion } from '../lugares.js';
 
 // Categorías que vienen de fábrica. Se guardan en la planilla recién cuando alguien las usa.
 const CATEGORIAS_BASE = [
@@ -48,7 +49,7 @@ function extraerLink(texto) {
   return String(texto || '').match(/https?:\/\/\S+/)?.[0] || '';
 }
 
-function useCategorias() {
+export function useCategorias() {
   return useLive(async () => {
     const guardadas = (await db.Categorias.toArray()).filter((c) => !c.deleted);
     const base = CATEGORIAS_BASE.map((b) => ({ ...b, ...guardadas.find((c) => c.id === b.id), color: b.color }));
@@ -234,6 +235,7 @@ function TarjetaIdea({ idea, categorias, personas, yoId }) {
       <span class="chip claro">${cat?.nombre || 'Sin categoría'}</span>
       <${ChipFuente} idea=${idea} />
       ${idea.duracion && html`<span class="chip claro">${textoDuracion(idea.duracion)}</span>`}
+      ${tieneUbicacion(idea) && html`<a class="chip claro chip-link" href=${'#/mapa/' + encodeURIComponent(idea.id)}>Ver en el mapa</a>`}
       <span style="flex:1"></span>
       ${idea.evento && html`<span class="chip claro">Agendada · ${diaCorto(idea.evento.fecha)}</span>`}
     </div>
@@ -302,8 +304,10 @@ function DetalleIdea({ idea, categorias, personas, yoId }) {
         <span class="chip claro">${cat?.nombre || 'Sin categoría'}</span>
         <${ChipFuente} idea=${idea} texto="Ver" />
         ${idea.duracion && html`<span class="chip claro">Dura ${textoDuracion(idea.duracion)}</span>`}
+        ${tieneUbicacion(idea) && html`<a class="chip claro chip-link" href=${'#/mapa/' + encodeURIComponent(idea.id)}>Ver en el mapa</a>`}
       </div>
       <h1>${idea.titulo}</h1>
+      ${idea.lugar && html`<p class="autora">${idea.lugar}</p>`}
       <p class="autora">${guardada ? 'Guardado por ' : 'Propuesta por '}${autora?.nombre || 'alguien'}</p>
       ${idea.nota && html`<p class="nota-idea">${idea.nota}</p>`}
     </section>
@@ -368,8 +372,10 @@ function PasarAlItinerario({ idea, minimo }) {
       fecha: elegido,
       hora,
       titulo: idea.titulo,
-      lugar: '',
-      mapsUrl: '',
+      lugar: idea.lugar || '',
+      mapsUrl: idea.mapsUrl || '',
+      lat: tieneUbicacion(idea) ? idea.lat : null,
+      lng: tieneUbicacion(idea) ? idea.lng : null,
       categoria: CATEGORIAS_ITINERARIO[nombreCat] ? nombreCat : 'Otro',
       participantes: [],
       duracion: idea.duracion || null,
@@ -404,11 +410,12 @@ function PasarAlItinerario({ idea, minimo }) {
 function FormIdea({ idea, compartido, pegar, categorias, yoId, alCerrar }) {
   const nueva = !idea;
   const [form, setForm] = useState(() => {
-    if (idea) return { url: idea.url || '', titulo: idea.titulo, categoriaId: idea.categoriaId, nota: idea.nota || '', duracion: idea.duracion || null, destino: idea.estado === 'guardada' ? 'guardada' : 'votacion' };
+    const ubicacion = { lugar: idea?.lugar || '', mapsUrl: idea?.mapsUrl || '', lat: idea?.lat ?? null, lng: idea?.lng ?? null };
+    if (idea) return { url: idea.url || '', titulo: idea.titulo, categoriaId: idea.categoriaId, nota: idea.nota || '', duracion: idea.duracion || null, destino: idea.estado === 'guardada' ? 'guardada' : 'votacion', ...ubicacion };
     const url = compartido ? compartido.url || extraerLink(compartido.text) : '';
     // El texto compartido suele traer el link pegado: se usa solo lo que no es link como título.
     const titulo = compartido ? (compartido.title || compartido.text || '').replace(/https?:\/\/\S+/g, '').trim().slice(0, 80) : '';
-    return { url, titulo, categoriaId: '', nota: '', duracion: null, destino: url ? 'guardada' : 'votacion' };
+    return { url, titulo, categoriaId: '', nota: '', duracion: null, destino: url ? 'guardada' : 'votacion', ...ubicacion };
   });
   const [creando, setCreando] = useState(false);
   const [error, setError] = useState('');
@@ -435,6 +442,8 @@ function FormIdea({ idea, compartido, pegar, categorias, yoId, alCerrar }) {
     const url = form.url.trim();
     if (!titulo) return setError(url ? 'Poné qué es, por ejemplo «bar con vista».' : 'Poné qué querés hacer.');
     if (url && !/^https?:\/\//i.test(url)) return setError('El link tiene que empezar con https://');
+    const mapsUrl = form.mapsUrl.trim();
+    if (mapsUrl && !/^https?:\/\//i.test(mapsUrl)) return setError('El link de Maps tiene que empezar con https://');
     await asegurarCategoria(categorias.find((c) => c.id === form.categoriaId));
     const fila = {
       id: idea?.id || nuevoId(),
@@ -444,6 +453,10 @@ function FormIdea({ idea, compartido, pegar, categorias, yoId, alCerrar }) {
       duracion: form.duracion,
       url,
       fuente: detectarFuente(url),
+      lugar: form.lugar.trim(),
+      mapsUrl,
+      lat: tieneUbicacion(form) ? form.lat : null,
+      lng: tieneUbicacion(form) ? form.lng : null,
       estado: idea ? (idea.estado === 'agendada' ? 'agendada' : form.destino) : form.destino,
       personaId: idea?.personaId || yoId,
       deleted: false,
@@ -488,6 +501,7 @@ function FormIdea({ idea, compartido, pegar, categorias, yoId, alCerrar }) {
         <textarea id="i-nota" class="entrada area" rows="2" maxlength="500" placeholder="Por qué está bueno, cuánto sale, horarios…" value=${form.nota} onInput=${cambiar('nota')}></textarea>
       </div>
       <${CampoDuracion} id="i-dur" valor=${form.duracion} alCambiar=${(duracion) => setForm({ ...form, duracion })} />
+      <${CampoUbicacion} id="i-ubic" valor=${form} pista=${form.titulo} ejemploLugar="Rua Gonçalves Dias, Centro" alCambiar=${(cambio) => setForm(cambio)} />
       ${(nueva || idea.estado === 'guardada') && html`
         <div class="destinos" role="radiogroup" aria-label="Dónde guardarla">
           <button type="button" role="radio" aria-checked=${form.destino === 'votacion' ? 'true' : 'false'} style="background:var(--lila)" onClick=${() => setForm({ ...form, destino: 'votacion' })}>

@@ -15,9 +15,9 @@
 const TABLAS = {
   Viaje:         { nombre: 's', fechaInicio: 's', fechaFin: 's', monedaBase: 's', cambioUSD: 'n', cambioUYU: 'n', linkAlbum: 's' },
   Personas:      { nombre: 's', color: 's' },
-  Itinerario:    { fecha: 's', hora: 's', titulo: 's', lugar: 's', mapsUrl: 's', categoria: 's', participantes: 'j', ideaId: 's', duracion: 'n' },
+  Itinerario:    { fecha: 's', hora: 's', titulo: 's', lugar: 's', mapsUrl: 's', categoria: 's', participantes: 'j', ideaId: 's', duracion: 'n', lat: 'n', lng: 'n' },
   Reservas:      { tipo: 's', titulo: 's', fecha: 's', hora: 's', detalle: 's', codigo: 's', direccion: 's', fechaFin: 's', duracion: 'n' },
-  Ideas:         { titulo: 's', categoriaId: 's', nota: 's', url: 's', fuente: 's', estado: 's', personaId: 's', duracion: 'n' },
+  Ideas:         { titulo: 's', categoriaId: 's', nota: 's', url: 's', fuente: 's', estado: 's', personaId: 's', duracion: 'n', lugar: 's', mapsUrl: 's', lat: 'n', lng: 'n' },
   Votos:         { ideaId: 's', personaId: 's', valor: 'n' },
   Categorias:    { nombre: 's' },
   Gastos:        { fecha: 's', monto: 'n', moneda: 's', cambio: 'n', descripcion: 's', pagoId: 's', participantes: 'j' },
@@ -70,6 +70,14 @@ function rotarCodigo() {
   Logger.log('Código nuevo: ' + codigo);
 }
 
+/**
+ * Ejecutala UNA vez después de pegar esta versión (Fase 6: Mapa), antes de crear la implementación nueva:
+ * Google pide permiso para «conectarse a un servicio externo» (leer los links cortos de Maps).
+ */
+function autorizar() {
+  Logger.log('Permiso OK. Respuesta de prueba: ' + UrlFetchApp.fetch('https://maps.app.goo.gl', { followRedirects: false, muteHttpExceptions: true }).getResponseCode());
+}
+
 /** Muestra el código actual en el registro. */
 function verCodigo() {
   Logger.log('Código del viaje: ' + PropertiesService.getScriptProperties().getProperty('CODIGO'));
@@ -108,6 +116,14 @@ function doPost(e) {
   if (!pedido || normalizarCodigo_(pedido.codigo) !== props.getProperty('CODIGO')) {
     return json_({ ok: false, error: 'codigo' });
   }
+  if (pedido.accion === 'ubicacion') {
+    try {
+      return json_({ ok: true, url: seguirLink_(pedido.url) });
+    } catch (err) {
+      return json_({ ok: false, error: 'link' });
+    }
+  }
+
   const ops = Array.isArray(pedido.ops) ? pedido.ops : [];
   if (ops.length > MAX_OPS) return json_({ ok: false, error: 'demasiados' });
   const since = Number(pedido.since) || 0;
@@ -141,6 +157,32 @@ function doPost(e) {
   } finally {
     lock.releaseLock();
   }
+}
+
+/**
+ * Los links cortos de Maps (maps.app.goo.gl/…) no traen el lugar: hay que abrirlos para ver
+ * adónde llevan. El celular no puede (el navegador lo bloquea), así que lo hace la planilla.
+ * Solo sigue links de Google y devuelve el link largo; las coordenadas las saca la app.
+ */
+function seguirLink_(url) {
+  let actual = String(url || '');
+  for (let i = 0; i < 6; i++) {
+    const host = (actual.match(/^https?:\/\/([^\/?#]+)/i) || [])[1] || '';
+    if (!/(^|\.)(goo\.gl|google\.[a-z.]+)$/i.test(host)) return '';
+    if (/^consent\./i.test(host)) {
+      const m = actual.match(/[?&]continue=([^&]+)/);
+      if (!m) return actual;
+      actual = decodeURIComponent(m[1]);
+      continue;
+    }
+    if (!/(^|\.)goo\.gl$/i.test(host)) return actual; // ya es el link largo
+    const r = UrlFetchApp.fetch(actual, { followRedirects: false, muteHttpExceptions: true });
+    const h = r.getHeaders();
+    const destino = h.Location || h.location;
+    if (!destino) return actual;
+    actual = destino;
+  }
+  return actual;
 }
 
 function json_(obj) {

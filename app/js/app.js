@@ -11,8 +11,9 @@ import { Ideas } from './pantallas/ideas.js';
 import { Gastos } from './pantallas/gastos.js';
 import { Llevar } from './pantallas/llevar.js';
 import { Fotos } from './pantallas/fotos.js';
+import { Mapa } from './pantallas/mapa.js';
 
-const RUTAS = ['inicio', 'itinerario', 'reservas', 'ideas', 'gastos', 'llevar', 'fotos', 'ajustes'];
+const RUTAS = ['inicio', 'itinerario', 'reservas', 'ideas', 'gastos', 'llevar', 'fotos', 'mapa', 'ajustes'];
 
 /** '#/ideas/abc' → { ruta: 'ideas', sub: 'abc' } */
 function rutaActual() {
@@ -54,6 +55,7 @@ function App() {
   else if (ruta === 'gastos') pantalla = html`<${Gastos} />`;
   else if (ruta === 'llevar') pantalla = html`<${Llevar} />`;
   else if (ruta === 'fotos') pantalla = html`<${Fotos} />`;
+  else if (ruta === 'mapa') pantalla = html`<${Mapa} sub=${sub} />`;
 
   return html`<div class="app">${pantalla}<${Nav} ruta=${ruta} /></div>`;
 }

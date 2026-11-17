@@ -1,4 +1,4 @@
-// Inicio: cuenta regresiva (RF-07), palabra del día (RF-08), pendientes (RF-09), modo "durante el viaje" (RF-10) y accesos a Qué llevar y Fotos.
+// Inicio: cuenta regresiva (RF-07), palabra del día (RF-08), pendientes (RF-09), modo "durante el viaje" (RF-10) y accesos a Qué llevar, Mapa y Fotos.
 import { html } from '../vendor/preact-htm.js';
 import { Avatar, Estrella, Flecha, PildoraSync, usePersonas, useSesion, useViaje, useYo } from '../ui.js';
 import { ahora, fechaLarga, horario, hoyISO, momentoDelViaje } from '../util.js';
@@ -105,6 +105,14 @@ export function Inicio() {
           </div>
           <${Flecha} />
         </a>`}
+
+      <a class="tarjeta fila-link" href="#/mapa" style="background:var(--menta)">
+        <div class="texto">
+          <p class="sub">Mapa</p>
+          <p class="titulo">Guardados e itinerario</p>
+        </div>
+        <${Flecha} />
+      </a>
 
       <a class="tarjeta fila-link" href="#/fotos" style="background:var(--lila)">
         <div class="texto">

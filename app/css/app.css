@@ -481,3 +481,81 @@ a.cerrar { color: var(--tinta); }
 .fila-deuda .sub { margin-top: 2px; font-size: 13px; font-weight: 600; }
 .fila-deuda .montos { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
 .fila-deuda .monto { font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+/* ───────── Mapa ───────── */
+.mapa-caja { position: relative; margin: 10px 16px 0; }
+.mapa {
+  position: relative; z-index: 0; /* los paneles de Leaflet quedan adentro, debajo de la barra y las hojas */
+  height: 52vh; height: 52dvh; min-height: 300px;
+  border: var(--borde); border-radius: var(--radio-tarjeta); overflow: hidden;
+  background: #EAE6DC; font-family: var(--texto);
+}
+.mapa-caja.chico { margin: 0; }
+.mapa-caja.chico .mapa { height: 300px; min-height: 0; }
+.mapa-error {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px;
+  text-align: center; font-size: 14px; font-weight: 700;
+}
+.mapa-boton {
+  position: absolute; z-index: 1; left: 12px; bottom: 12px;
+  width: 48px; height: 48px; border: var(--borde); border-radius: 50%;
+  background: var(--blanco); color: var(--tinta);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.mapa .leaflet-control-zoom { border: 2px solid var(--tinta); border-radius: 16px; overflow: hidden; }
+.mapa .leaflet-control-zoom a { width: 40px; height: 40px; line-height: 38px; color: var(--tinta); font-size: 20px; }
+.mapa .leaflet-control-attribution { font-size: 10px; border-top-left-radius: 8px; }
+
+.pin span {
+  display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;
+  border: 2.5px solid var(--tinta); border-radius: 50%; box-shadow: 0 2px 0 var(--tinta);
+  font-family: var(--titulos); font-size: 14px; font-weight: 800; color: var(--tinta); line-height: 1;
+}
+.pin.elegido span { border-width: 3px; font-size: 17px; box-shadow: 0 3px 0 var(--tinta); }
+.pin.tenue span { border-width: 2px; box-shadow: none; opacity: 0.85; }
+
+.punto-color { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--tinta); flex-shrink: 0; }
+.punto-elegido { gap: 12px; border: 2px solid var(--tinta); }
+.punto-elegido .acciones .boton-borde { background: rgba(255, 253, 248, 0.6); }
+
+.fila-punto {
+  display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 8px;
+  border: 2px solid var(--tinta); border-radius: var(--radio-tarjeta); background: var(--blanco);
+}
+.fila-punto .texto {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; min-height: 52px;
+  border: 0; background: transparent; text-align: left; padding: 0;
+}
+.fila-punto .cuerpo { display: flex; flex-direction: column; min-width: 0; }
+.fila-punto .titulo { font-size: 16px; font-weight: 800; overflow-wrap: anywhere; }
+.fila-punto .sub { margin-top: 2px; font-size: 13px; font-weight: 600; color: var(--suave); overflow-wrap: anywhere; }
+.fila-punto .flecha { width: 44px; height: 44px; }
+.pin-lista {
+  width: 34px; height: 34px; flex-shrink: 0; border: 2.5px solid var(--tinta); border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--titulos); font-size: 14px; font-weight: 800;
+}
+
+.fila-titulo-dia { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 16px 0 0; }
+.fila-titulo-dia .titulo-dia { padding-top: 0; }
+.fila-titulo-dia .boton-borde { flex-shrink: 0; min-height: 40px; font-size: 13px; }
+
+/* Campo de ubicación en los formularios */
+.ubicacion {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 8px 8px 8px 14px; border: 2px dashed var(--tinta); border-radius: var(--radio-tarjeta);
+}
+.ubicacion.ubicada { border-style: solid; background: var(--menta); }
+.ubicacion .texto { flex: 1; min-width: 120px; font-size: 14px; font-weight: 800; }
+.ubicacion .boton-borde { min-height: 40px; background: var(--fondo); }
+.pin-chico { width: 18px; height: 18px; flex-shrink: 0; border: 2.5px solid var(--tinta); border-radius: 50%; background: var(--fondo); }
+.ubicacion.ubicada .pin-chico { background: var(--coral); }
+.elegir-mapa { display: flex; flex-direction: column; gap: 10px; }
+.elegir-mapa .fila-entrada .boton { min-height: 52px; }
+.resultados { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.resultados button {
+  width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 10px 16px;
+  border: 2px solid var(--tinta); border-radius: 20px; background: var(--blanco); text-align: left;
+}
+.resultados .titulo { font-size: 15px; font-weight: 800; }
+.resultados .sub { font-size: 12px; font-weight: 600; color: var(--suave); }
