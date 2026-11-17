@@ -1,7 +1,7 @@
 // Gastos: cargar, repartir, lo que falta pagar (gasto por gasto) y pagos hechos (RF-30 a RF-36).
 import { html, useState } from '../vendor/preact-htm.js';
 import { guardar, borrar, nuevoId, db } from '../db.js';
-import { Avatar, BotonAgregar, BotonBorrar, Hoja, useLive, usePersonas, useSesion, useViaje } from '../ui.js';
+import { Avatar, BotonAgregar, BotonBorrar, Hoja, useLive, usePedidoAgregar, usePersonas, useSesion, useViaje } from '../ui.js';
 import { fechaLarga, hoyISO } from '../util.js';
 import { MONEDAS, aCentavos, cambioDelViaje, centavosATexto, deudas, enPesos, enReales, plata, repartir } from '../cuentas.js';
 
@@ -37,6 +37,7 @@ export function Gastos() {
   const { personaId } = useSesion();
   const [vista, setVista] = useState('gastos');
   const [editando, setEditando] = useState(null); // null · {} para nuevo · el gasto a editar
+  usePedidoAgregar('gastos', () => { setVista('gastos'); setEditando({}); });
 
   const nombre = (id) => (id === personaId ? 'Vos' : cuentas.todas.find((p) => p.id === id)?.nombre || 'Alguien');
   const total = cuentas.gastos.reduce((s, g) => s + enReales(g), 0);

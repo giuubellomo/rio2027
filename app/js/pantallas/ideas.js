@@ -1,7 +1,7 @@
 // Ideas: proponer, guardar links de TikTok o Reels, votar y pasar al itinerario (RF-21 a RF-29).
 import { html, useState, useEffect } from '../vendor/preact-htm.js';
 import { guardar, borrar, nuevoId, db } from '../db.js';
-import { Avatar, BotonAgregar, BotonBorrar, CampoDuracion, Flecha, Hoja, useLive, usePersonas, useSesion, useViaje } from '../ui.js';
+import { Avatar, BotonAgregar, BotonBorrar, CampoDuracion, Flecha, Hoja, TituloPestanas, useLive, usePedidoAgregar, usePersonas, useSesion, useViaje } from '../ui.js';
 import { diasDelViaje, hoyISO, normalizar, partesDia, textoDuracion } from '../util.js';
 import { CATEGORIAS as CATEGORIAS_ITINERARIO, useEventos } from './itinerario.js';
 import { CampoUbicacion, tieneUbicacion } from '../lugares.js';
@@ -120,6 +120,7 @@ export function Ideas({ sub }) {
   const [vista, setVista] = useState('votar');
   const [filtro, setFiltro] = useState('todas');
   const [form, setForm] = useState(null); // null · { idea } · { compartido }
+  usePedidoAgregar('ideas', () => setForm({}));
   const [creando, setCreando] = useState(false);
 
   // Link que llegó desde "Compartir" en Android (RF-23).
@@ -148,11 +149,11 @@ export function Ideas({ sub }) {
     <header class="titulo-pantalla con-boton">
       <div>
         <p class="chico">${faltanVotar === 0 ? (ideas.length ? 'Votaste todas las ideas' : 'Lo que queremos hacer en Brasil') : faltanVotar === 1 ? '1 idea espera tu voto' : `${faltanVotar} ideas esperan tu voto`}</p>
-        <h1>Ideas</h1>
+        <${TituloPestanas} actual="ideas" />
       </div>
       <div style="display:flex;gap:8px">
-        <button type="button" class="boton-redondo" aria-label="Pegar link de reel o TikTok" onClick=${() => setForm({ pegar: true })}>
-          <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1" /><path d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1" /></svg>
+        <button type="button" class="boton-redondo chico" aria-label="Pegar link de reel o TikTok" onClick=${() => setForm({ pegar: true })}>
+          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1" /><path d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1" /></svg>
         </button>
         <${BotonAgregar} etiqueta="Proponer idea" onClick=${() => setForm({})} />
       </div>
@@ -501,7 +502,7 @@ function FormIdea({ idea, compartido, pegar, categorias, yoId, alCerrar }) {
         <textarea id="i-nota" class="entrada area" rows="2" maxlength="500" placeholder="Por qué está bueno, cuánto sale, horarios…" value=${form.nota} onInput=${cambiar('nota')}></textarea>
       </div>
       <${CampoDuracion} id="i-dur" valor=${form.duracion} alCambiar=${(duracion) => setForm({ ...form, duracion })} />
-      <${CampoUbicacion} id="i-ubic" valor=${form} pista=${form.titulo} ejemploLugar="Rua Gonçalves Dias, Centro" alCambiar=${(cambio) => setForm(cambio)} />
+      <${CampoUbicacion} valor=${form} pista=${form.titulo} alCambiar=${(cambio) => setForm(cambio)} />
       ${(nueva || idea.estado === 'guardada') && html`
         <div class="destinos" role="radiogroup" aria-label="Dónde guardarla">
           <button type="button" role="radio" aria-checked=${form.destino === 'votacion' ? 'true' : 'false'} style="background:var(--lila)" onClick=${() => setForm({ ...form, destino: 'votacion' })}>

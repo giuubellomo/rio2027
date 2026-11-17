@@ -124,8 +124,8 @@ export function Hoja({ titulo, alCerrar, children }) {
 }
 
 export function BotonAgregar({ etiqueta, onClick }) {
-  return html`<button type="button" class="boton-agregar" aria-label=${etiqueta} onClick=${onClick}>
-    <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+  return html`<button type="button" class="boton-agregar chico" aria-label=${etiqueta} onClick=${onClick}>
+    <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
   </button>`;
 }
 
@@ -146,17 +146,110 @@ const ICONOS = {
   ideas: html`<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.8 10.6c.6.6.8 1.3.8 2.4h6c0-1.1.2-1.8.8-2.4A6 6 0 0 0 12 3z" />`,
   gastos: html`<path d="M3 7.5h15.5A2.5 2.5 0 0 1 21 10v7.5a2.5 2.5 0 0 1-2.5 2.5H3z" /><path d="M3 7.5L15 4v3.5M16.5 14h1.5" />`,
 };
-const SECCIONES = [
-  ['inicio', 'Inicio'], ['itinerario', 'Itinerario'], ['reservas', 'Reservas'], ['ideas', 'Ideas'], ['gastos', 'Gastos'],
-];
+const SECCIONES = [['inicio', 'Inicio'], ['itinerario', 'Itinerario'], null, ['ideas', 'Ideas'], ['gastos', 'Gastos']];
+// Pantallas que viven como pestaña dentro de otra sección del menú.
+const SECCION_DE = { reservas: 'itinerario', mapa: 'ideas' };
 
+/** Menú de abajo: 4 secciones y el ＋ en el centro para agregar cualquier cosa. */
 export function Nav({ ruta }) {
-  return html`<nav class="nav" aria-label="Secciones">
-    ${SECCIONES.map(([id, nombre]) => html`
-      <a href=${'#/' + id} aria-label=${nombre} aria-current=${ruta === id ? 'page' : undefined}>
-        <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${ICONOS[id]}</svg>
-      </a>`)}
-  </nav>`;
+  const [agregando, setAgregando] = useState(false);
+  // Si se cambia de pantalla (tocando otra sección del menú), el ＋ se cierra.
+  useEffect(() => setAgregando(false), [ruta]);
+  const activa = SECCION_DE[ruta] || ruta;
+  return html`
+    <nav class="nav" aria-label="Secciones">
+      ${SECCIONES.map((s) => s
+        ? html`<a href=${'#/' + s[0]} aria-label=${s[1]} aria-current=${activa === s[0] ? 'page' : undefined} onClick=${() => setAgregando(false)}>
+            <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${ICONOS[s[0]]}</svg>
+          </a>`
+        : html`<button type="button" class="nav-mas" aria-label=${agregando ? 'Cerrar' : 'Agregar'} aria-expanded=${agregando ? 'true' : 'false'} aria-controls="menu-agregar" onClick=${() => setAgregando(!agregando)}>
+            <svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+          </button>`)}
+    </nav>
+    ${agregando && html`<${MenuAgregar} alCerrar=${() => setAgregando(false)} />`}`;
+}
+
+// Qué se puede agregar desde el ＋, en dos columnas de tres (de arriba hacia abajo, fila por fila).
+// Las más usadas quedan abajo, cerca del botón: [pantalla, nombre, color].
+const OPCIONES_AGREGAR = [
+  ['ideas', 'Idea', 'var(--amarillo)'], ['fotos', 'Fotos', 'var(--blanco)'],
+  ['itinerario', 'Actividad', 'var(--celeste)'], ['llevar', 'Qué llevar', 'var(--menta)'],
+  ['gastos', 'Gasto', 'var(--coral)'], ['reservas', 'Reserva', 'var(--lila)'],
+];
+const ICONOS_AGREGAR = {
+  ...ICONOS,
+  llevar: html`<rect x="4" y="7" width="16" height="13" rx="2.5" /><path d="M9 7V4.5h6V7M4 12.5h16" />`,
+  fotos: html`<path d="M4 8h3l1.5-2.5h7L17 8h3v11H4z" /><circle cx="12" cy="13" r="3.5" />`,
+};
+
+/** Opciones que suben en línea desde el ＋ del menú. */
+function MenuAgregar({ alCerrar }) {
+  const viaje = useViaje();
+  const lista = useRef(null);
+  useEffect(() => {
+    lista.current?.querySelectorAll('button')[4]?.focus();
+    const tecla = (e) => e.key === 'Escape' && alCerrar();
+    addEventListener('keydown', tecla);
+    return () => removeEventListener('keydown', tecla);
+  }, []);
+  function elegir(ruta) {
+    alCerrar();
+    // Fotos: si ya hay álbum, se abre directo para subir; si no, la pantalla explica cómo cargarlo.
+    if (ruta === 'fotos' && viaje?.linkAlbum) return void open(viaje.linkAlbum, '_blank', 'noopener');
+    pedirAgregar(ruta);
+  }
+  return html`
+    <div class="velo-agregar" onClick=${alCerrar}></div>
+    <ul class="menu-agregar" id="menu-agregar" aria-label="Agregar" ref=${lista}>
+      ${OPCIONES_AGREGAR.map(([ruta, nombre, color], k) => html`
+        <li style=${'--orden:' + (2 - Math.floor(k / 2))}>
+          <button type="button" onClick=${() => elegir(ruta)}>
+            <span class="icono" style=${'background:' + color} aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${ICONOS_AGREGAR[ruta]}</svg>
+            </span>
+            ${nombre}
+          </button>
+        </li>`)}
+    </ul>`;
+}
+
+// El ＋ del menú deja un pedido y lleva a la pantalla; la pantalla lo toma y abre su formulario.
+let pedido = null;
+function pedirAgregar(ruta) {
+  pedido = ruta;
+  if (location.hash !== '#/' + ruta) location.hash = '#/' + ruta;
+  dispatchEvent(new Event('pedido-agregar')); // por si ya estaba en esa pantalla
+}
+
+/** Abre el formulario de la pantalla cuando se eligió en el ＋ del menú. */
+export function usePedidoAgregar(ruta, abrir) {
+  const ultimo = useRef(abrir);
+  ultimo.current = abrir;
+  useEffect(() => {
+    const revisar = () => {
+      if (pedido !== ruta) return;
+      pedido = null;
+      ultimo.current();
+    };
+    revisar();
+    addEventListener('pedido-agregar', revisar);
+    return () => removeEventListener('pedido-agregar', revisar);
+  }, []);
+}
+
+/** Título con pestañas: dos pantallas hermanas que comparten un lugar en el menú. */
+const GRUPOS = {
+  itinerario: [['itinerario', 'Itinerario'], ['reservas', 'Reservas']],
+  ideas: [['ideas', 'Ideas'], ['mapa', 'Mapa']],
+};
+export function TituloPestanas({ actual }) {
+  const grupo = GRUPOS[SECCION_DE[actual] || actual];
+  const [, nombre] = grupo.find(([id]) => id === actual);
+  const [otraId, otra] = grupo.find(([id]) => id !== actual);
+  return html`<div class="pestanas">
+    <h1>${nombre}</h1>
+    <a class="pestana-otra" href=${'#/' + otraId}>${otra} ›</a>
+  </div>`;
 }
 
 /** Selector de duración opcional. Guarda minutos (número) o null. */

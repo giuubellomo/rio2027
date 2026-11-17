@@ -1,7 +1,7 @@
 // Mapa: los Guardados de Ideas y las actividades del Itinerario, con filtros por categoría y por día.
 // Se entra desde Inicio, desde un día del Itinerario (#/mapa/2027-01-20) o desde una idea (#/mapa/<id>).
 import { html, useState, useEffect, useRef } from '../vendor/preact-htm.js';
-import { Flecha, useViaje } from '../ui.js';
+import { Flecha, TituloPestanas, useViaje } from '../ui.js';
 import { diasDelViaje, hoyISO, horario, partesDia } from '../util.js';
 import { MapaBase, RIO, iconoPin, linkAlLugar, linkComoLlegar, tieneUbicacion } from '../lugares.js';
 import { CATEGORIAS, useEventos } from './itinerario.js';
@@ -209,14 +209,9 @@ export function Mapa({ sub }) {
   const eventosUbicados = eventos.map(conUbicacion);
 
   return html`
-    <header class="titulo-pantalla con-volver">
-      <a class="cerrar" href="#/inicio" aria-label="Volver a Inicio">
-        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6" /></svg>
-      </a>
-      <div>
-        <p class="chico">Río y Búzios</p>
-        <h1>Mapa</h1>
-      </div>
+    <header class="titulo-pantalla">
+      <p class="chico">Río y Búzios</p>
+      <${TituloPestanas} actual="mapa" />
     </header>
     <div class="segmentos" role="group" aria-label="Qué ver">
       <button type="button" aria-pressed=${modo === 'guardados' ? 'true' : 'false'} onClick=${() => { setModo('guardados'); setElegido(null); }}>Guardados · ${ubicadosEn(guardados)}</button>

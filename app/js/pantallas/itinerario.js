@@ -1,7 +1,7 @@
 // Itinerario: días del viaje y sus actividades (RF-12 a RF-16).
 import { html, useState, useEffect, useRef } from '../vendor/preact-htm.js';
 import { guardar, borrar, nuevoId, db } from '../db.js';
-import { Avatar, BotonAgregar, BotonBorrar, CampoDuracion, Flecha, Hoja, useLive, usePersonas, useViaje } from '../ui.js';
+import { Avatar, BotonAgregar, BotonBorrar, CampoDuracion, Flecha, Hoja, TituloPestanas, useLive, usePedidoAgregar, usePersonas, useViaje } from '../ui.js';
 import { diasDelViaje, fechaLarga, horario, hoyISO, partesDia, porFechaHora } from '../util.js';
 import { CampoUbicacion, linkAlLugar, tieneUbicacion } from '../lugares.js';
 
@@ -39,6 +39,7 @@ export function Itinerario({ sub }) {
   const delDia = eventos.filter((e) => e.fecha === dia);
   // Actividades que quedaron fuera de las fechas del viaje (si se cambiaron en Ajustes).
   const fuera = dias.length ? eventos.filter((e) => !dias.includes(e.fecha)) : [];
+  usePedidoAgregar('itinerario', () => setEditando({ fecha: dia }));
 
   const tira = useRef(null);
   useEffect(() => {
@@ -47,7 +48,7 @@ export function Itinerario({ sub }) {
 
   if (viaje && !dias.length) {
     return html`
-      <header class="titulo-pantalla"><h1>Itinerario</h1></header>
+      <header class="titulo-pantalla"><${TituloPestanas} actual="itinerario" /></header>
       <main class="contenido">
         <a class="tarjeta fila-link" href="#/ajustes" style="background:var(--coral)">
           <div class="texto"><p class="titulo">Faltan las fechas del viaje</p><p class="sub">Cargalas en Ajustes y aparecen los días.</p></div>
@@ -58,7 +59,7 @@ export function Itinerario({ sub }) {
 
   return html`
     <header class="titulo-pantalla con-boton">
-      <div><p class="chico">${viaje?.nombre || 'Brasil 2027'}</p><h1>Itinerario</h1></div>
+      <div><p class="chico">${viaje?.nombre || 'Brasil 2027'}</p><${TituloPestanas} actual="itinerario" /></div>
       <${BotonAgregar} etiqueta="Agregar actividad" onClick=${() => setEditando({ fecha: dia })} />
     </header>
     <div class="tira-dias" role="group" aria-label="Días" ref=${tira}>
@@ -207,7 +208,7 @@ function FormEvento({ evento, dias, personas, alCerrar }) {
               onClick=${() => setForm({ ...form, categoria: form.categoria === nombre ? '' : nombre })}>${nombre}</button>`)}
         </div>
       </div>
-      <${CampoUbicacion} id="e-ubic" valor=${form} pista=${form.titulo} alCambiar=${(cambio) => setForm(cambio)} />
+      <${CampoUbicacion} valor=${form} pista=${form.titulo} alCambiar=${(cambio) => setForm(cambio)} />
       ${personas.length > 1 && html`
         <div class="campo">
           <span class="rotulo-campo" id="e-quien">Quiénes van</span>

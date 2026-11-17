@@ -1,6 +1,6 @@
 // Service worker: guarda la app en el celular para que abra sin señal.
 // Cada vez que se publica un cambio hay que subir VERSION, así los celulares bajan lo nuevo.
-const VERSION = 'v9';
+const VERSION = 'v10';
 const CACHE = 'rio2027-' + VERSION;
 // Partes del mapa (teselas) ya vistas: quedan para usar sin señal. Se guarda aparte para no perderlas al actualizar.
 const CACHE_MAPA = 'rio2027-mapa';

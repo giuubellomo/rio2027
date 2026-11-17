@@ -1,8 +1,6 @@
-// Ubicaciones: sacar el punto de un link de Maps, buscar lugares por nombre y el mapa base (Leaflet).
+// Ubicaciones: buscar lugares por nombre y el mapa base (Leaflet).
 // Lo usan el Mapa (pantallas/mapa.js) y los formularios de Ideas e Itinerario.
 import { html, useState, useEffect, useRef } from './vendor/preact-htm.js';
-import { llamar } from './api.js';
-import { sesion } from './sesion.js';
 
 export const RIO = [-22.95, -43.2];
 // Zona del viaje (Río a Búzios): la búsqueda prefiere lugares de acá.
@@ -17,76 +15,6 @@ function par(lat, lng) {
   const a = Number(lat);
   const b = Number(lng);
   return coordValida(a, b) ? { lat: redondear(a), lng: redondear(b) } : null;
-}
-
-/** Busca el punto dentro de un link largo de Google Maps. Sin punto, null. */
-export function coordsDeLink(url) {
-  let texto = String(url || '');
-  try {
-    texto = decodeURIComponent(texto);
-  } catch {
-    /* se usa tal cual */
-  }
-  const num = '(-?\\d{1,3}(?:\\.\\d+)?)';
-  // !3d…!4d… es el lugar en sí; @lat,lng es el centro de la pantalla (se usa si no hay otro).
-  const lugar = texto.match(new RegExp('!3d' + num + '!4d' + num));
-  if (lugar) return par(lugar[1], lugar[2]);
-  const enParametro = texto.match(new RegExp('[?&](?:q|query|ll|center|destination|daddr)=' + num + ',\\s*\\+?' + num));
-  if (enParametro) return par(enParametro[1], enParametro[2]);
-  const enRuta = texto.match(new RegExp('/(?:place|search|dir)/(?:[^/]*/)?' + num + ',\\s*\\+?' + num));
-  if (enRuta) return par(enRuta[1], enRuta[2]);
-  const arroba = texto.match(new RegExp('@' + num + ',' + num));
-  if (arroba) return par(arroba[1], arroba[2]);
-  return null;
-}
-
-/** Nombre del lugar en el link (/place/Confeitaria+Colombo/ o ?q=Confeitaria Colombo). */
-export function nombreDeLink(url) {
-  const limpiar = (t) => {
-    try {
-      return decodeURIComponent(t.replace(/\+/g, ' ')).trim();
-    } catch {
-      return t.replace(/\+/g, ' ').trim();
-    }
-  };
-  const lugar = String(url || '').match(/\/place\/([^/@?]+)/);
-  if (lugar && !/^-?\d/.test(lugar[1])) return limpiar(lugar[1]);
-  const q = String(url || '').match(/[?&](?:q|query)=([^&]+)/);
-  if (q && !coordsDeLink('?q=' + q[1])) return limpiar(q[1]);
-  return '';
-}
-
-function host(url) {
-  try {
-    return new URL(url).hostname.replace(/^www\./, '');
-  } catch {
-    return '';
-  }
-}
-
-export const esLinkMaps = (url) => /(^|\.)(goo\.gl|google\.[a-z.]+)$/.test(host(url)) && (/goo\.gl/.test(host(url)) || /\/maps|maps\./.test(url));
-
-/**
- * Ubicación de un link de Maps: primero lo que trae el link; si es un link corto, la planilla
- * lo abre para ver el largo; si igual no hay punto, se busca por el nombre.
- * Devuelve { lat, lng, nombre } o null. Tira SinSenal si no hay internet.
- */
-export async function ubicarLink(url) {
-  if (!esLinkMaps(url)) return null;
-  let largo = url;
-  let punto = coordsDeLink(largo);
-  if (!punto && /goo\.gl$/.test(host(url))) {
-    const r = await llamar({ codigo: sesion.codigo, accion: 'ubicacion', url });
-    largo = r.url || '';
-    punto = coordsDeLink(largo);
-  }
-  const nombre = nombreDeLink(largo);
-  if (punto) return { ...punto, nombre };
-  if (nombre) {
-    const [primero] = await buscarLugar(nombre);
-    if (primero) return { lat: primero.lat, lng: primero.lng, nombre };
-  }
-  return null;
 }
 
 /** Busca por nombre en OpenStreetMap (gratis). Prefiere Río y Búzios. */
@@ -201,72 +129,14 @@ export function MapaBase({ alListo, clase = '', children }) {
 // ───────── Campo de ubicación (formularios) ─────────
 
 /**
- * «Dónde», «Link de Maps» y el punto en el mapa. valor = { lugar, mapsUrl, lat, lng }.
- * Pegar un link de Maps ubica solo; si no se puede, se marca tocando el mapa.
+ * Ubicación de una idea o actividad: buscador + mapa. valor = { lugar, mapsUrl, lat, lng }.
+ * Elegir un resultado pone el pin y el nombre del lugar; tocar el mapa mueve el pin.
  */
-export function CampoUbicacion({ id, valor, alCambiar, pista = '', ejemploLugar = 'Ipanema' }) {
-  const [estado, setEstado] = useState('');
-  const [eligiendo, setEligiendo] = useState(false);
-  const resuelto = useRef(valor.mapsUrl); // el link que ya estaba no se vuelve a buscar
-  const ubicado = tieneUbicacion(valor);
-
-  useEffect(() => {
-    const url = valor.mapsUrl.trim();
-    if (url === resuelto.current) return;
-    if (!url || !esLinkMaps(url)) {
-      setEstado(url ? 'noEsMaps' : '');
-      return;
-    }
-    let vivo = true;
-    setEstado('buscando');
-    const t = setTimeout(async () => {
-      try {
-        const r = await ubicarLink(url);
-        if (!vivo) return;
-        resuelto.current = url;
-        if (!r) return setEstado('noEncontrado');
-        alCambiar((v) => ({ ...v, lat: r.lat, lng: r.lng, lugar: v.lugar.trim() || r.nombre.slice(0, 120) }));
-        setEstado('ok');
-      } catch {
-        if (vivo) setEstado('sinSenal');
-      }
-    }, 500);
-    return () => {
-      vivo = false;
-      clearTimeout(t);
-    };
-  }, [valor.mapsUrl]);
-
-  const mensajes = {
-    buscando: 'Buscando el lugar en el link…',
-    ok: '¡Listo! Ya está en el mapa.',
-    noEncontrado: 'Ese link no trae la ubicación. Marcalo en el mapa.',
-    sinSenal: 'Sin señal no se puede leer el link. Marcalo en el mapa o probá después.',
-    noEsMaps: 'No es un link de Google Maps: igual queda guardado para abrirlo.',
-  };
-
-  return html`
-    <div class="campo">
-      <label for=${id + '-lugar'}>Dónde <span class="opcional">(opcional)</span></label>
-      <input id=${id + '-lugar'} class="entrada" type="text" maxlength="120" placeholder=${ejemploLugar} value=${valor.lugar}
-        onInput=${(e) => { const lugar = e.currentTarget.value; alCambiar((v) => ({ ...v, lugar })); }} />
-    </div>
-    <div class="campo">
-      <label for=${id + '-maps'}>Link de Maps <span class="opcional">(opcional)</span></label>
-      <input id=${id + '-maps'} class="entrada" type="url" inputmode="url" maxlength="500" placeholder="https://maps.app.goo.gl/…" value=${valor.mapsUrl}
-        onInput=${(e) => { const mapsUrl = e.currentTarget.value; alCambiar((v) => ({ ...v, mapsUrl })); }} />
-      <p class="ayuda" aria-live="polite">${mensajes[estado] || 'En Google Maps: Compartir → Copiar link, y pegalo acá.'}</p>
-    </div>
-    <div class=${'ubicacion' + (ubicado ? ' ubicada' : '')}>
-      <span class="pin-chico" aria-hidden="true"></span>
-      <p class="texto">${ubicado ? 'Está en el mapa' : 'Todavía no está en el mapa'}</p>
-      <button type="button" class="boton-borde" aria-expanded=${eligiendo ? 'true' : 'false'} onClick=${() => setEligiendo(!eligiendo)}>
-        ${eligiendo ? 'Listo' : ubicado ? 'Mover' : 'Marcar'}
-      </button>
-      ${ubicado && !eligiendo && html`<button type="button" class="boton-borde" onClick=${() => alCambiar((v) => ({ ...v, lat: null, lng: null }))}>Quitar</button>`}
-    </div>
-    ${eligiendo && html`<${ElegirEnMapa} valor=${valor} pista=${valor.lugar || pista} alCambiar=${alCambiar} />`}
-  `;
+export function CampoUbicacion({ valor, alCambiar, pista = '' }) {
+  return html`<div class="campo">
+    <p class="rotulo-campo">Ubicación <span class="opcional">(opcional)</span></p>
+    <${ElegirEnMapa} valor=${valor} pista=${valor.lugar || pista} alCambiar=${alCambiar} />
+  </div>`;
 }
 
 /** Buscador + mapa: tocando el mapa (o eligiendo un resultado) se mueve el pin. */
@@ -291,8 +161,9 @@ function ElegirEnMapa({ valor, pista, alCambiar }) {
   }
   useEffect(moverPin, [valor.lat, valor.lng]);
 
-  function poner(lat, lng, zoom) {
-    alCambiar((v) => ({ ...v, lat, lng }));
+  // Si se mueve el pin, un link de Maps viejo ya no coincide: se descarta.
+  function poner(lat, lng, zoom, lugar) {
+    alCambiar((v) => ({ ...v, lat, lng, mapsUrl: '', lugar: lugar ?? v.lugar }));
     if (zoom) refs.current.mapa?.setView([lat, lng], zoom);
   }
 
@@ -324,11 +195,17 @@ function ElegirEnMapa({ valor, pista, alCambiar }) {
     </div>
     ${error && html`<p class="nota">${error}</p>`}
     ${resultados?.length > 0 && html`<ul class="resultados">
-      ${resultados.map((r) => html`<li><button type="button" onClick=${() => { poner(r.lat, r.lng, 16); setResultados(null); }}>
+      ${resultados.map((r) => html`<li><button type="button" onClick=${() => { poner(r.lat, r.lng, 16, r.nombre.slice(0, 120)); setResultados(null); }}>
         <span class="titulo">${r.nombre}</span><span class="sub">${r.detalle}</span>
       </button></li>`)}
     </ul>`}
     <${MapaBase} clase="chico" alListo=${alListo} />
-    <p class="nota">Tocá el mapa para poner el pin justo donde es.</p>
+    ${tieneUbicacion(valor)
+      ? html`<div class="ubicacion ubicada">
+          <span class="pin-chico" aria-hidden="true"></span>
+          <p class="texto">${valor.lugar || 'Punto marcado en el mapa'}</p>
+          <button type="button" class="boton-borde" onClick=${() => alCambiar((v) => ({ ...v, lat: null, lng: null, lugar: '', mapsUrl: '' }))}>Quitar</button>
+        </div>`
+      : html`<p class="nota">Buscá el lugar o tocá el mapa para poner el pin.</p>`}
   </div>`;
 }

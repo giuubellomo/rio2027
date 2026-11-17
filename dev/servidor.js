@@ -66,14 +66,6 @@ const contexto = {
     MimeType: { JSON: 'json' },
     createTextOutput: (texto) => ({ texto, setMimeType() { return this; } }),
   },
-  // Para seguir links cortos de Maps: curl sin seguir redirecciones, como hace Code.gs.
-  UrlFetchApp: {
-    fetch(url) {
-      const salida = require('child_process').execFileSync('curl', ['-s', '-o', '/dev/null', '-m', '10', '-w', '%{http_code} %{redirect_url}', url], { encoding: 'utf8' });
-      const [codigo, destino] = salida.split(' ');
-      return { getResponseCode: () => Number(codigo), getHeaders: () => (destino ? { Location: destino } : {}) };
-    },
-  },
   Utilities: { getUuid: () => require('crypto').randomUUID() },
   Logger: { log: (m) => console.log('[Code.gs]', m) },
   Date, Math, JSON, Number, String, Object, Array, Error, decodeURIComponent,

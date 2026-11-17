@@ -1,9 +1,9 @@
-// Inicio: cuenta regresiva (RF-07), palabra del día (RF-08), pendientes (RF-09), modo "durante el viaje" (RF-10) y accesos a Qué llevar, Mapa y Fotos.
+// Inicio: cuenta regresiva (RF-07), palabra del día (RF-08), pendientes (RF-09), modo "durante el viaje" (RF-10) y accesos a Qué llevar, Reservas y Fotos.
 import { html } from '../vendor/preact-htm.js';
 import { Avatar, Estrella, Flecha, PildoraSync, usePersonas, useSesion, useViaje, useYo } from '../ui.js';
 import { ahora, fechaLarga, horario, hoyISO, momentoDelViaje } from '../util.js';
 import { CATEGORIAS, quienesVan, useEventos } from './itinerario.js';
-import { faltanDatos as faltanEnReserva, useReservas } from './reservas.js';
+import { faltanDatos as faltanEnReserva, proximaReserva, useReservas } from './reservas.js';
 import { sinMiVoto, useIdeas } from './ideas.js';
 import { misDeudas, useCuentas } from './gastos.js';
 import { enPesos } from '../cuentas.js';
@@ -17,6 +17,7 @@ export function Inicio() {
   const momento = momentoDelViaje(viaje);
   const reservas = useReservas();
   const incompletas = reservas.filter((r) => faltanEnReserva(r).length).length;
+  const proxima = proximaReserva(reservas);
   const { personaId } = useSesion();
   const porVotar = sinMiVoto(useIdeas(), personaId).length;
   const cuentas = useCuentas();
@@ -106,10 +107,12 @@ export function Inicio() {
           <${Flecha} />
         </a>`}
 
-      <a class="tarjeta fila-link" href="#/mapa" style="background:var(--menta)">
+      <a class="tarjeta fila-link" href="#/reservas" style="background:var(--celeste)">
         <div class="texto">
-          <p class="sub">Mapa</p>
-          <p class="titulo">Guardados e itinerario</p>
+          <p class="sub">${proxima ? 'Próxima reserva' : 'Reservas'}</p>
+          <p class="titulo">${proxima
+            ? [proxima.titulo, fechaLarga(proxima.fecha), proxima.hora].filter(Boolean).join(' · ')
+            : reservas.length ? 'Ya pasaron todas' : 'Vuelos, traslados y alojamiento'}</p>
         </div>
         <${Flecha} />
       </a>

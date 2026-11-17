@@ -70,15 +70,6 @@ function rotarCodigo() {
   Logger.log('Código nuevo: ' + codigo);
 }
 
-/**
- * Ejecutala UNA vez después de pegar esta versión (Fase 6: Mapa), antes de crear la implementación nueva:
- * Google pide permiso para «conectarse a un servicio externo» (leer los links cortos de Maps).
- */
-function autorizar() {
-  const r = UrlFetchApp.fetch('https://www.google.com/maps', { followRedirects: false, muteHttpExceptions: true });
-  Logger.log('Permiso OK (respuesta ' + r.getResponseCode() + '). Ya podés crear la versión nueva.');
-}
-
 /** Muestra el código actual en el registro. */
 function verCodigo() {
   Logger.log('Código del viaje: ' + PropertiesService.getScriptProperties().getProperty('CODIGO'));
@@ -117,14 +108,6 @@ function doPost(e) {
   if (!pedido || normalizarCodigo_(pedido.codigo) !== props.getProperty('CODIGO')) {
     return json_({ ok: false, error: 'codigo' });
   }
-  if (pedido.accion === 'ubicacion') {
-    try {
-      return json_({ ok: true, url: seguirLink_(pedido.url) });
-    } catch (err) {
-      return json_({ ok: false, error: 'link' });
-    }
-  }
-
   const ops = Array.isArray(pedido.ops) ? pedido.ops : [];
   if (ops.length > MAX_OPS) return json_({ ok: false, error: 'demasiados' });
   const since = Number(pedido.since) || 0;
@@ -158,32 +141,6 @@ function doPost(e) {
   } finally {
     lock.releaseLock();
   }
-}
-
-/**
- * Los links cortos de Maps (maps.app.goo.gl/…) no traen el lugar: hay que abrirlos para ver
- * adónde llevan. El celular no puede (el navegador lo bloquea), así que lo hace la planilla.
- * Solo sigue links de Google y devuelve el link largo; las coordenadas las saca la app.
- */
-function seguirLink_(url) {
-  let actual = String(url || '');
-  for (let i = 0; i < 6; i++) {
-    const host = (actual.match(/^https?:\/\/([^\/?#]+)/i) || [])[1] || '';
-    if (!/(^|\.)(goo\.gl|google\.[a-z.]+)$/i.test(host)) return '';
-    if (/^consent\./i.test(host)) {
-      const m = actual.match(/[?&]continue=([^&]+)/);
-      if (!m) return actual;
-      actual = decodeURIComponent(m[1]);
-      continue;
-    }
-    if (!/(^|\.)goo\.gl$/i.test(host)) return actual; // ya es el link largo
-    const r = UrlFetchApp.fetch(actual, { followRedirects: false, muteHttpExceptions: true });
-    const h = r.getHeaders();
-    const destino = h.Location || h.location;
-    if (!destino) return actual;
-    actual = destino;
-  }
-  return actual;
 }
 
 function json_(obj) {

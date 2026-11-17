@@ -1,7 +1,7 @@
 // Qué llevar: lista del grupo con quién lleva cada cosa y checklist personal (RF-37 a RF-39).
 import { html, useState } from '../vendor/preact-htm.js';
 import { guardar, borrar, nuevoId, db } from '../db.js';
-import { Avatar, BotonBorrar, Hoja, useLive, usePersonas, useSesion } from '../ui.js';
+import { Avatar, BotonBorrar, Hoja, useLive, usePedidoAgregar, usePersonas, useSesion } from '../ui.js';
 
 /** Ítems vivos de Equipaje, en orden alfabético. */
 export function useEquipaje() {
@@ -21,6 +21,11 @@ export function Llevar() {
   const { personaId } = useSesion();
   const [vista, setVista] = useState('grupo');
   const [editando, setEditando] = useState(null);
+  // Desde el ＋ del menú: lista del grupo y el cursor listo para escribir.
+  usePedidoAgregar('llevar', () => {
+    setVista('grupo');
+    setTimeout(() => document.querySelector('.agregar-llevar input')?.focus(), 0);
+  });
 
   const grupo = equipaje.filter((e) => e.tipo === 'grupo');
   const mio = equipaje.filter((e) => e.tipo === 'personal' && e.personaId === personaId);

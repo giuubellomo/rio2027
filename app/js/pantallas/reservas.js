@@ -1,7 +1,7 @@
 // Reservas: vuelos, alojamiento y traslados (RF-17 a RF-20).
 import { html, useState } from '../vendor/preact-htm.js';
 import { guardar, borrar, nuevoId, db } from '../db.js';
-import { BotonAgregar, BotonBorrar, CampoDuracion, Flecha, Hoja, useLive } from '../ui.js';
+import { BotonAgregar, BotonBorrar, CampoDuracion, Flecha, Hoja, TituloPestanas, useLive, usePedidoAgregar } from '../ui.js';
 import { ahora, diasEntre, fechaLarga, horario, linkMaps, porFechaHora } from '../util.js';
 
 export const TIPOS_RESERVA = {
@@ -37,12 +37,13 @@ export function Reservas() {
   const reservas = useReservas();
   const [filtro, setFiltro] = useState('todo');
   const [editando, setEditando] = useState(null); // null · {} para nueva · la reserva a editar
+  usePedidoAgregar('reservas', () => setEditando({}));
   const proxima = proximaReserva(reservas);
   const visibles = reservas.filter(FILTROS.find((f) => f[0] === filtro)[2]);
 
   return html`
     <header class="titulo-pantalla con-boton">
-      <div><p class="chico">Vuelos, traslados y alojamiento</p><h1>Reservas</h1></div>
+      <div><p class="chico">Vuelos, traslados y alojamiento</p><${TituloPestanas} actual="reservas" /></div>
       <${BotonAgregar} etiqueta="Agregar reserva" onClick=${() => setEditando({})} />
     </header>
     <div class="segmentos" role="group" aria-label="Filtrar">
