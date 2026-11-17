@@ -75,7 +75,8 @@ function rotarCodigo() {
  * Google pide permiso para «conectarse a un servicio externo» (leer los links cortos de Maps).
  */
 function autorizar() {
-  Logger.log('Permiso OK. Respuesta de prueba: ' + UrlFetchApp.fetch('https://maps.app.goo.gl', { followRedirects: false, muteHttpExceptions: true }).getResponseCode());
+  const r = UrlFetchApp.fetch('https://www.google.com/maps', { followRedirects: false, muteHttpExceptions: true });
+  Logger.log('Permiso OK (respuesta ' + r.getResponseCode() + '). Ya podés crear la versión nueva.');
 }
 
 /** Muestra el código actual en el registro. */
